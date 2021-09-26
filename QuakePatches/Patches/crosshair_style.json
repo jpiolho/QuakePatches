@@ -1,0 +1,347 @@
+﻿{
+  "id": "crosshair_style",
+  "name": "Change crosshair style",
+  "description": "Change the crosshair to another character",
+  "variants": [
+    {
+      "id": "plus",
+      "name": "+ (default) (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "28"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plus_red",
+      "name": "+ (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "A8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cross",
+      "name": "X (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "55"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cross_red",
+      "name": "X (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "F5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "o",
+      "name": "O (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "6C"
+          }
+        ]
+      }
+    },
+    {
+      "id": "o_red",
+      "name": "O (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "EC"
+          }
+        ]
+      }
+    },
+    {
+      "id": "o_yellow",
+      "name": "O (yellow)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "8F"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dot",
+      "name": ". (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "2B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dot_yellow",
+      "name": ". (yellow)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "99"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dot_red",
+      "name": ". (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "AB"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dash",
+      "name": "- (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "2A"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dash_red",
+      "name": "- (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "AA"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pipe",
+      "name": "| (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "79"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pipe_red",
+      "name": "| (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "F9"
+          }
+        ]
+      }
+    },
+    {
+      "id": "star",
+      "name": "* (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "27"
+          }
+        ]
+      }
+    },
+    {
+      "id": "star_red",
+      "name": "* (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "A7"
+          }
+        ]
+      }
+    },
+    {
+      "id": "square",
+      "name": "■ (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "08"
+          }
+        ]
+      }
+    },
+    {
+      "id": "square_red",
+      "name": "■ (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "88"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quake",
+      "name": "Quake (white)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "6E"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quake_red",
+      "name": "Quake (red)",
+      "patch": {
+        "pattern": [
+          "41 8d 0c 06",
+          "45 8d 41 28",
+          "f3 0f 11 7c 24 28"
+        ],
+        "replacements": [
+          {
+            "index": 7,
+            "bytes": "EE"
+          }
+        ]
+      }
+    }
+  ]
+}
