@@ -1,0 +1,47 @@
+{
+  "id": "settings_detailedSensitivity",
+  "name": "Detailed sensitivity",
+  "description": "Increases the maximum sensitivity up to 30 and makes it go up in increments of 0.25",
+  "patches": [
+    {
+      "id": "patch_slider",
+      "pattern": [
+        "f3 0f 10 1d ac 24 4d 00",
+        "f3 0f 11 5c 24 28",
+        "f3 0f 10 05 52 27 4d 00"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "74 24 4D 00"
+        },
+        {
+          "index": 18,
+          "bytes": "AE 27 4D 00"
+        }
+      ]
+    },
+    {
+      "id": "patch_cvar",
+      "pattern": [
+        "f3 0f 10 05 55 b1 80 00",
+        "f3 0f 11 44 24 30",
+        "f3 0f 10 0d 33 ae 80 00"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "B1 B1 80 00"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_slider","patch_cvar" ]
+    }
+  ]
+
+}
