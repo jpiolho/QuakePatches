@@ -118,7 +118,7 @@ namespace QuakePatches
             }
         }
 
-        public bool ApplyPatch(PatchFile patchFile, PatchVariant variant)
+        public void ApplyPatch(PatchFile patchFile, PatchVariant variant)
         {
             if (_markerOffset == -1)
             {
@@ -155,7 +155,7 @@ namespace QuakePatches
                 var matches = IndexOf(pattern);
 
                 if (matches.Length != 1)
-                    return false;
+                    throw new PatchingException("Could not find a match for the pattern");
 
                 // Do all the replacements
                 foreach (var replacement in patch.Replacements)
@@ -179,8 +179,6 @@ namespace QuakePatches
             var json = JsonSerializer.Serialize(_appliedPatches.ToArray());
             _writer.Write((int)json.Length);
             _writer.Write(json.ToCharArray());
-
-            return true;
         }
 
         private string DoVariantVariableReplacement(string text, PatchVariant variant)

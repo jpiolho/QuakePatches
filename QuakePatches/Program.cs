@@ -353,7 +353,7 @@ namespace QuakePatches
 
             var binary = new PatchedBinary(_originalBinary.FullBinary, _originalBinary.PatchProgramHash);
 
-            bool success = false;
+            bool fullSuccess = false;
             int count = 0;
             foreach (var filePatch in _patches.Where(p => p.IsSelected))
             {
@@ -364,20 +364,18 @@ namespace QuakePatches
 
                 try
                 {
-                    success = binary.ApplyPatch(patch, variant);
+                    binary.ApplyPatch(patch, variant);
                 }
                 catch (Exception ex)
                 {
-                    success = false;
+                    fullSuccess = false;
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"FAILED: Failed to apply patch '{patch}'. Exception: {ex}");
-                    break;
+                    Console.ResetColor();
+
+                    continue;
                 }
 
-                if (!success)
-                {
-                    Console.WriteLine($"FAILED: Failed to apply patch '{patch}'. Too many matches");
-                    break;
-                }
 
                 count++;
             }
@@ -385,9 +383,9 @@ namespace QuakePatches
             Console.WriteLine();
             Console.WriteLine($"{count} patches applied");
 
-            if (!success)
+            if (!fullSuccess)
             {
-                Console.WriteLine($"Unable to apply all the patches. Do you still want to save the patched binary? (Y/N)");
+                Console.WriteLine($"Unable to apply all the patches. Do you still want to save the patched binary? There might be issues (Y/N)");
                 if (!ReadYesOrNo())
                     return;
             }
