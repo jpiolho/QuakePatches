@@ -2,23 +2,27 @@
   "id": "lobby_avoidLobbyOnChangeLevel",
   "name": "Do not go to lobby on changelevel",
   "description": "(Server only) Does not go back to the lobby when playing deathmatch and instead moves on to the next map",
+  "patches": [
+    {
+      "id": "patch1",
+      "pattern": [
+        "3C 01",
+        "75 56",
+        "B9 02 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 1,
+          "bytes": "02"
+        }
+      ]
+    }
+  ],
   "variants": [
     {
       "id": "default",
       "name": "Default",
-      "patch": {
-        "pattern": [
-          "3C 01",
-          "75 56",
-          "B9 02 00 00 00"
-        ],
-        "replacements": [
-          {
-            "index": 1,
-            "bytes": "02"
-          }
-        ]
-      }
+      "patches": [ "patch1" ]
     }
   ]
 }

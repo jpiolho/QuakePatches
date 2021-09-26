@@ -2,29 +2,32 @@
   "id": "botnav_disablePlacementCheck",
   "name": "Disable bot node placement check",
   "description": "Allows you to place bot nav nodes anywhere",
+  "patches": [
+    {
+      "id": "patch1",
+      "pattern": [
+        "0f 97 c0",
+        "0f 28 bc 24 10 01 00 00",
+        "0f 28 b4 24 20 01 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 0,
+          "bytes": "B0 01 90"
+        },
+        {
+          "index": 24,
+          "bytes": "EB 29"
+        }
+      ]
+    }
+  ],
   "variants": [
     {
       "id": "default",
       "name": "Default",
-      "patch": {
-        "pattern": [
-          "0f 97 c0",
-          "0f 28 bc 24 10 01 00 00",
-          "0f 28 b4 24 20 01 00 00"
-        ],
-        "replacements": [
-          {
-            "index": 0,
-            "bytes": "B0 01 90"
-          },
-          {
-            "index": 24,
-            "bytes": "EB 29"
-          }
-        ]
-      }
+      "patches": [ "patch1" ]
     }
-
   ]
   
 }

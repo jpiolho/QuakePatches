@@ -1,12 +1,12 @@
-﻿using System;
+﻿using QuakePatches.Exceptions;
+using QuakePatches.Patches;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using static QuakePatches.PatchDefinition;
 
 namespace QuakePatches
 {
@@ -65,12 +65,12 @@ namespace QuakePatches
             _writer = new BinaryWriter(_stream);
         }
 
-        public PatchedBinary(byte[] binary,string patchProgramHash) : this()
+        public PatchedBinary(byte[] binary, string patchProgramHash) : this()
         {
-            Load(binary,patchProgramHash);
+            Load(binary, patchProgramHash);
         }
 
-        public PatchStatus Load(byte[] binary,string patchProgramHash)
+        public PatchStatus Load(byte[] binary, string patchProgramHash)
         {
             PatchProgramHash = patchProgramHash;
 
@@ -81,7 +81,7 @@ namespace QuakePatches
             var markerBytes = Encoding.UTF8.GetBytes(PatchMarker);
             var patchIndexes = IndexOf(markerBytes);
             _markerOffset = patchIndexes.Length == 1 ? patchIndexes[0] : -1;
-                
+
             // Check if not patched
             if (_markerOffset == -1)
                 return Patched = PatchStatus.Unpatched;
@@ -89,7 +89,7 @@ namespace QuakePatches
             // Patched?
             _stream.Position = _markerOffset;
 
-            if(!_reader.ReadBytes(PatchMarker.Length).SequenceEqual(markerBytes))
+            if (!_reader.ReadBytes(PatchMarker.Length).SequenceEqual(markerBytes))
                 return Patched = PatchStatus.Corrupted;
 
             try
@@ -112,15 +112,15 @@ namespace QuakePatches
 
                 return Patched = PatchStatus.Patched;
             }
-            catch(Exception ex) when (ex is IOException || ex is JsonException)
+            catch (Exception ex) when (ex is IOException || ex is JsonException)
             {
                 return Patched = PatchStatus.Corrupted;
             }
         }
 
-        public bool ApplyPatch(PatchDefinition patchDefinition,PatchVariant variant)
+        public bool ApplyPatch(PatchFile patchFile, PatchVariant variant)
         {
-            if(_markerOffset == -1)
+            if (_markerOffset == -1)
             {
                 var hash = GetBinaryHash();
 
@@ -135,29 +135,43 @@ namespace QuakePatches
                 _writer.Write((int)0); // JSON Length
             }
 
-
-            var patch = variant.Patch;
-            
-            // Find the pattern
-            var pattern = Convert.FromHexString(string.Join("", patch.Pattern).Trim().Replace(" ", ""));
-            var matches = IndexOf(pattern);
-
-            if (matches.Length != 1)
-                return false;
-
-            // Do all the replacements
-            foreach (var replacement in patch.Replacements)
+            // Load in all the patches
+            var patches = new List<PatchDefinition>(variant.Patches.Length);
+            foreach (var patchId in variant.Patches)
             {
-                var index = matches[0];
+                var patch = patchFile.Patches.FirstOrDefault(p => p.Id.Equals(patchId, StringComparison.OrdinalIgnoreCase));
 
-                index += replacement.Index;
-                var bytes = Convert.FromHexString(replacement.Bytes.Trim().Replace(" ", ""));
+                if (patch == null)
+                    throw new PatchingException($"Could not find patch with id '{patchId}'");
 
-                _stream.Position = index;
-                _stream.Write(bytes);
+                patches.Add(patch);
             }
 
-            _appliedPatches.Add(new AppliedPatch() { Patch = patchDefinition.Id, Variant = variant?.Id });
+            // Apply all the patches from this variant
+            foreach (var patch in patches)
+            {
+                // Find the pattern
+                var pattern = Convert.FromHexString(DoVariantVariableReplacement(string.Join(" ", patch.Pattern).Trim(), variant).Replace(" ", ""));
+                var matches = IndexOf(pattern);
+
+                if (matches.Length != 1)
+                    return false;
+
+                // Do all the replacements
+                foreach (var replacement in patch.Replacements)
+                {
+                    var index = matches[0];
+
+                    index += replacement.Index;
+                    var bytes = Convert.FromHexString(DoVariantVariableReplacement(replacement.Bytes, variant).Trim().Replace(" ", ""));
+
+                    _stream.Position = index;
+                    _stream.Write(bytes);
+                }
+            }
+
+
+            _appliedPatches.Add(new AppliedPatch() { Patch = patchFile.Id, Variant = variant.Id });
 
             // Write json
             _stream.Position = _markerOffset + PatchMarker.Length + 128 + 128;
@@ -169,6 +183,20 @@ namespace QuakePatches
             return true;
         }
 
+        private string DoVariantVariableReplacement(string text, PatchVariant variant)
+        {
+            // If no variables specified, just return the original text
+            if (variant.Variables == null || variant.Variables.Length == 0)
+                return text;
+
+            var sb = new StringBuilder(text);
+
+            foreach (var variable in variant.Variables)
+                sb.Replace($"%{variable.Variable}%", variable.Value);
+
+            return sb.ToString();
+        }
+
         private int[] IndexOf(byte[] pattern)
         {
             _stream.Position = 0;
@@ -176,11 +204,11 @@ namespace QuakePatches
             var startIndex = -1;
             var end = _markerOffset == -1 ? _stream.Length : _markerOffset;
             var indexes = new List<int>();
-            for(int i=0,pi=0;i<end;i++)
+            for (int i = 0, pi = 0; i < end; i++)
             {
                 var b = _reader.ReadByte();
 
-                if(b != pattern[pi])
+                if (b != pattern[pi])
                 {
                     // Failed match, reset
                     pi = 0;
@@ -196,7 +224,8 @@ namespace QuakePatches
                     pi++;
 
                     // Did we reach the end of the pattern?
-                    if (pi >= pattern.Length) {
+                    if (pi >= pattern.Length)
+                    {
                         indexes.Add(startIndex);
 
                         pi = 0;

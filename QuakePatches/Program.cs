@@ -1,12 +1,10 @@
-﻿using System;
+﻿using QuakePatches.Patches;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using System.Threading;
-using static QuakePatches.PatchDefinition;
 
 namespace QuakePatches
 {
@@ -19,33 +17,28 @@ namespace QuakePatches
         };
         const string BinaryName = "Quake_x64_steam.exe";
 
-        private static List<PatchDefinition> _patches;
-        private static List<AppliedPatch> _selectedPatches;
+        private static List<LoadedPatchFile> _patches;
         private static PatchedBinary _originalBinary;
         private static string _ownHash;
         private static string _binaryPath;
 
         static void Main(string[] args)
         {
+            // Set default colors
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.BackgroundColor = ConsoleColor.Black;
 
-            _binaryPath = BinaryName;
-
-            if (args.Length > 0)
-                _binaryPath = args[0];
-
-            if(!File.Exists(_binaryPath))
+            // Get target binary and check if it exists
+            _binaryPath = GetTargetBinaryPath(args);
+            if (!File.Exists(_binaryPath))
             {
                 Console.WriteLine($"ERROR: Cannot find '{BinaryName}'. Put this in the same folder or drag & drop the exe into this program");
                 return;
             }
 
-            PrintWarning();
+            PrintWarningAndWaitConfirmation();
 
             Console.WriteLine();
-
-            var originalPath = _binaryPath + ".original";
 
 
             // Calculate Quake Patch hash
@@ -54,16 +47,17 @@ namespace QuakePatches
             Console.WriteLine(_ownHash);
 
             Console.Write($"Loading '{_binaryPath}'... ");
-            var binary = new PatchedBinary(File.ReadAllBytes(_binaryPath),_ownHash);
+            var binary = new PatchedBinary(File.ReadAllBytes(_binaryPath), _ownHash);
             Console.WriteLine("Loaded");
 
             // Make sure the backup exists and that it's fine
-            if(!File.Exists(originalPath))
+            var originalPath = _binaryPath + ".original";
+            if (!File.Exists(originalPath))
             {
                 Console.WriteLine("No original backup found");
                 Console.WriteLine("Making a backup of the original executable...");
 
-                if(binary.Patched != PatchedBinary.PatchStatus.Unpatched)
+                if (binary.Patched != PatchedBinary.PatchStatus.Unpatched)
                 {
                     Console.WriteLine("FAILURE: The binary that was provided is not an original unpatched binary.");
                     return;
@@ -78,7 +72,7 @@ namespace QuakePatches
             _originalBinary = new PatchedBinary(File.ReadAllBytes(originalPath), _ownHash);
             Console.WriteLine("Loaded");
 
-            if(_originalBinary.Patched != PatchedBinary.PatchStatus.Unpatched)
+            if (_originalBinary.Patched != PatchedBinary.PatchStatus.Unpatched)
             {
                 Console.WriteLine("FAILURE: The original binary is not an unpatched version. Please delete it and make sure you make a new copy");
                 return;
@@ -87,20 +81,20 @@ namespace QuakePatches
             // Do some version checks between original and backup
             Console.Write("Doing version checks... ");
 
-            if(binary.Patched == PatchedBinary.PatchStatus.PatchedVersionMismatch)
+            if (binary.Patched == PatchedBinary.PatchStatus.PatchedVersionMismatch)
             {
                 Console.WriteLine("WARNING: The binary is patched, but it was done with a different Quake Patch program.");
             }
-            else if(binary.Patched == PatchedBinary.PatchStatus.Patched)
+            else if (binary.Patched == PatchedBinary.PatchStatus.Patched)
             {
-                if(_originalBinary.GetBinaryHash() != binary.OriginalHash)
+                if (_originalBinary.GetBinaryHash() != binary.OriginalHash)
                 {
                     Console.WriteLine("FAILURE: The binary is patched, but the backup is for a different game version.");
                     return;
                 }
             }
-            
-            if(_originalBinary.GetBinaryHash() != (binary.OriginalHash ?? binary.GetBinaryHash()))
+
+            if (_originalBinary.GetBinaryHash() != (binary.OriginalHash ?? binary.GetBinaryHash()))
             {
                 Console.WriteLine("FAILURE: The binary and backup are for a different game version.");
                 return;
@@ -114,29 +108,69 @@ namespace QuakePatches
             Console.WriteLine($"Loaded {_patches.Count} patches");
 
             // Select applied patches
-            _selectedPatches = new List<AppliedPatch>();
-            if(binary.Patched == PatchedBinary.PatchStatus.Patched)
+            if (binary.Patched == PatchedBinary.PatchStatus.Patched)
             {
                 Console.Write("Selecting existing patches... ");
 
-                _selectedPatches.AddRange(binary.AppliedPatches);
+                SetSelectedPatchesFromBinary(binary);
 
                 Console.WriteLine("DONE");
             }
 
             //Console.WriteLine("Continuing in 4s...");
             //Thread.Sleep(TimeSpan.FromSeconds(4));
-            
+
 
 
             MenuPatches();
 
         }
 
+        /// <summary>
+        /// Given the provided patched binary, it will select all the variants that are present in the binary.
+        /// </summary>
+        static void SetSelectedPatchesFromBinary(PatchedBinary binary)
+        {
+            foreach (var appliedPatch in binary.AppliedPatches)
+            {
+                // Find the LoadedPatchFile
+                var loadedPatchFile = _patches.FirstOrDefault(p => p.Patch.Id.Equals(appliedPatch.Patch, StringComparison.OrdinalIgnoreCase));
+                if (loadedPatchFile == null)
+                {
+                    Console.WriteLine($"WARNING: Unable to find patch with id '{appliedPatch.Patch}'");
+                    continue;
+                }
+
+                // Find the variant
+                var variant = loadedPatchFile.Patch.Variants.FirstOrDefault(v => v.Id.Equals(appliedPatch.Variant, StringComparison.OrdinalIgnoreCase));
+                if (variant == null)
+                {
+                    Console.WriteLine($"WARNING: Unable to find patch variant with id '{appliedPatch.Patch}' in patch '{loadedPatchFile.Patch.Id}'");
+                    continue;
+                }
+
+                // Set it selected as with this variant
+                loadedPatchFile.SelectedVariant = variant;
+            }
+        }
+
+        /// <summary>
+        /// Returns the target binary path.
+        /// By default uses <see cref="BinaryName"/> unless specified in the <paramref name="args"/>.
+        /// </summary>
+        static string GetTargetBinaryPath(string[] args)
+        {
+            var path = BinaryName;
+            if (args.Length > 0)
+                path = args[^1];
+
+            return path;
+        }
+
         static void MenuPatches()
         {
-            const int ItemsPerPage = 5;
-            
+            const int ItemsPerPage = 6;
+
             int selectedPatch = 0;
             int page = 0;
             var pagesCount = Math.Ceiling(_patches.Count / (float)ItemsPerPage);
@@ -153,16 +187,15 @@ namespace QuakePatches
 
                 // Print pagination
                 Console.WriteLine($"Page {page + 1}/{pagesCount}");
-                
+
                 // Print patches menu
                 for (var i = start; i < end; i++)
                 {
-                    var patch = _patches[i];
+                    var filePatch = _patches[i];
 
                     Console.ResetColor();
 
-                    var sPatch = _selectedPatches.FirstOrDefault(p => p.Patch == patch.Id);
-                    if (sPatch != null)
+                    if (filePatch.IsSelected)
                     {
                         Console.Write("[");
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -179,19 +212,20 @@ namespace QuakePatches
                         Console.BackgroundColor = ConsoleColor.Gray;
                     }
 
-                    Console.WriteLine(patch.Name);
+                    Console.WriteLine(filePatch.Patch.Name);
 
                     Console.ResetColor();
 
-                    if(patch.Variants.Length > 1 && sPatch?.Variant != null)
+                    // If selected and there's more than 1 variant, display it
+                    if (filePatch.SelectedVariant != null && filePatch.Patch.Variants.Length > 1)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"    Selected variant: {patch.Variants.First(v => v.Id == sPatch.Variant).Name}");
-                    }   
+                        Console.WriteLine($"    Selected variant: {filePatch.SelectedVariant.Name}");
+                    }
 
                     Console.ResetColor();
 
-                    Console.WriteLine($"    {patch.Description}");
+                    Console.WriteLine($"    {filePatch.Patch.Description}");
                     Console.WriteLine();
                 }
 
@@ -203,9 +237,9 @@ namespace QuakePatches
                 Console.WriteLine("ENTER: Toggle patch\t\tF10: Apply patch...\tESQ: Exit");
 
 
-                switch(Console.ReadKey().Key)
+                switch (Console.ReadKey().Key)
                 {
-                    case ConsoleKey.DownArrow: selectedPatch = Math.Min(end-1, selectedPatch + 1); break;
+                    case ConsoleKey.DownArrow: selectedPatch = Math.Min(end - 1, selectedPatch + 1); break;
                     case ConsoleKey.UpArrow: selectedPatch = Math.Max(start, selectedPatch - 1); break;
                     case ConsoleKey.LeftArrow:
                         {
@@ -218,7 +252,7 @@ namespace QuakePatches
                         }
                     case ConsoleKey.RightArrow:
                         {
-                            if(page < pagesCount-1)
+                            if (page < pagesCount - 1)
                             {
                                 page++;
                                 selectedPatch = Math.Min(_patches.Count, selectedPatch + ItemsPerPage);
@@ -227,32 +261,25 @@ namespace QuakePatches
                         }
                     case ConsoleKey.Enter:
                         {
-                            var patch = _patches[selectedPatch];
+                            var filePatch = _patches[selectedPatch];
 
-                            var sPatch = _selectedPatches.Find(p => p.Patch == patch.Id);
-                            if (sPatch != null) {
-                                _selectedPatches.Remove(sPatch);
+                            // If selected, unselect it!
+                            if (filePatch.IsSelected)
+                            {
+                                filePatch.SelectedVariant = null;
+                                break;
                             }
-                            else {
-                                PatchVariant selectedVariant = null;
-                                // Display select variant menu if there's more than 1
-                                if (patch.Variants.Length > 1)
-                                {
-                                    var variant = MenuSelectPatchVariant(patch);
 
-                                    if (variant == null) // Cancel!
-                                        break;
-
-                                    selectedVariant = variant;
-                                }
-                                else
-                                {
-                                    selectedVariant = patch.Variants[0];
-                                }
-
-                                _selectedPatches.Add(new AppliedPatch() { Patch = patch.Id, Variant = selectedVariant.Id });
+                            // If only one variant, select that one
+                            if(filePatch.Patch.Variants.Length == 1)
+                            {
+                                filePatch.SelectedVariant = filePatch.Patch.Variants[0];
+                                break;
                             }
-                            
+
+                            // More than 1 variant, need to show the variant select menu
+                            filePatch.SelectedVariant = MenuSelectPatchVariant(filePatch.Patch);
+
                             break;
                         }
                     case ConsoleKey.F10: ApplyPatch(); break;
@@ -261,18 +288,18 @@ namespace QuakePatches
             }
         }
 
-        static PatchVariant MenuSelectPatchVariant(PatchDefinition patch)
+        static PatchVariant MenuSelectPatchVariant(PatchFile patch)
         {
             int variant = 0;
-            
 
-            while(true)
+
+            while (true)
             {
                 Console.Clear();
                 Console.WriteLine($"Select which variant to apply for patch '{patch.Name}'");
                 Console.WriteLine();
 
-                for (var i=0;i<patch.Variants.Length;i++)
+                for (var i = 0; i < patch.Variants.Length; i++)
                 {
                     Console.Write($"{i + 1}. ");
                     if (i == variant)
@@ -293,7 +320,7 @@ namespace QuakePatches
                 switch (Console.ReadKey().Key)
                 {
                     case ConsoleKey.UpArrow: variant = Math.Max(0, variant - 1); break;
-                    case ConsoleKey.DownArrow: variant = Math.Min(patch.Variants.Length-1, variant + 1); break;
+                    case ConsoleKey.DownArrow: variant = Math.Min(patch.Variants.Length - 1, variant + 1); break;
                     case ConsoleKey.Enter: return patch.Variants[variant];
                     case ConsoleKey.Escape: return null;
                 }
@@ -328,18 +355,18 @@ namespace QuakePatches
 
             bool success = false;
             int count = 0;
-            foreach(var selectedPatch in _selectedPatches)
+            foreach (var filePatch in _patches.Where(p => p.IsSelected))
             {
-                var patch = _patches.First(p => p.Id == selectedPatch.Patch);
-                var variant = patch.Variants.First(v => v.Id == selectedPatch.Variant);
+                var patch = filePatch.Patch;
+                var variant = filePatch.SelectedVariant;
 
                 Console.WriteLine($"Applying patch '{patch.Name}' variant '{variant.Name}'...");
 
                 try
                 {
-                    success = binary.ApplyPatch(patch,variant);
+                    success = binary.ApplyPatch(patch, variant);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     success = false;
                     Console.WriteLine($"FAILED: Failed to apply patch '{patch}'. Exception: {ex}");
@@ -358,7 +385,7 @@ namespace QuakePatches
             Console.WriteLine();
             Console.WriteLine($"{count} patches applied");
 
-            if(!success)
+            if (!success)
             {
                 Console.WriteLine($"Unable to apply all the patches. Do you still want to save the patched binary? (Y/N)");
                 if (!ReadYesOrNo())
@@ -382,8 +409,7 @@ namespace QuakePatches
 
         static bool LoadPatches()
         {
-            _patches = new List<PatchDefinition>();
-            _selectedPatches = new List<AppliedPatch>();
+            _patches = new List<LoadedPatchFile>();
 
             // Load patches from the Patches folder
             var patchesFolder = Path.Combine(Environment.CurrentDirectory, "Patches");
@@ -392,15 +418,20 @@ namespace QuakePatches
                 Console.WriteLine("Patches folder found");
                 foreach (var file in new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Patches")).GetFiles("*.json"))
                 {
-                    var patch = JsonSerializer.Deserialize<PatchDefinition>(File.ReadAllText(file.FullName), _jsonSerializerOptions);
-                    _patches.Add(patch);
+                    var patch = JsonSerializer.Deserialize<PatchFile>(File.ReadAllText(file.FullName), _jsonSerializerOptions);
+                    
+                    _patches.Add(new LoadedPatchFile()
+                    {
+                        Patch = patch,
+                        SelectedVariant = null
+                    });
                 }
             }
 
             return true;
         }
 
-        static void PrintWarning()
+        static void PrintWarningAndWaitConfirmation()
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Quake Enhanced Patches");
@@ -419,6 +450,9 @@ namespace QuakePatches
                 continue;
         }
 
+        /// <summary>
+        /// Returns the SHA512 hash of the QuakePatches program .exe
+        /// </summary>
         static string GetOwnHash()
         {
             var processName = Path.GetFileNameWithoutExtension(System.Diagnostics.Process.GetCurrentProcess().ProcessName) + ".exe";
