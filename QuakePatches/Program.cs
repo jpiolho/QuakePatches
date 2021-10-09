@@ -353,7 +353,7 @@ namespace QuakePatches
 
             var binary = new PatchedBinary(_originalBinary.FullBinary, _originalBinary.PatchProgramHash);
 
-            bool fullSuccess = false;
+            bool fullSuccess = true;
             int count = 0;
             foreach (var filePatch in _patches.Where(p => p.IsSelected))
             {
