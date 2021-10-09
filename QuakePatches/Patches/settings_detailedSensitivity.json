@@ -4,34 +4,44 @@
   "description": "Increases the maximum sensitivity up to 30 and makes it go up in increments of 0.25",
   "patches": [
     {
-      "id": "patch_slider",
+      "id": "patch_slider_steps",
       "pattern": [
-        "f3 0f 10 1d ac 24 4d 00",
-        "f3 0f 11 5c 24 28",
-        "f3 0f 10 05 52 27 4d 00"
+        "f3 0f 10 3d 35 80 4d 00",
+        "45 0f 57 d2",
+        "83 bb 90 00 00 00 00"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "74 24 4D 00"
-        },
+          "bytes": "fd 7f 4d 00"
+        }
+      ]
+    },
+    {
+      "id": "patch_slider_max",
+      "pattern": [
+        "f3 0f 10 05 4d 82 4d 00",
+        "f3 0f 11 44 24 20",
+        "0f 28 df"
+      ],
+      "replacements": [
         {
-          "index": 18,
-          "bytes": "AE 27 4D 00"
+          "index": 4,
+          "bytes": "a9 82 4d 00"
         }
       ]
     },
     {
       "id": "patch_cvar",
       "pattern": [
-        "f3 0f 10 05 55 b1 80 00",
+        "f3 0f 10 05 25 97 82 00",
         "f3 0f 11 44 24 30",
-        "f3 0f 10 0d 33 ae 80 00"
+        "f3 0f 10 0d f7 93 82 00"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "B1 B1 80 00"
+          "bytes": "81 97 82 00"
         }
       ]
     }
@@ -40,7 +50,7 @@
     {
       "id": "default",
       "name": "Default",
-      "patches": [ "patch_slider","patch_cvar" ]
+      "patches": [ "patch_slider_steps", "patch_slider_max","patch_cvar" ]
     }
   ]
 
