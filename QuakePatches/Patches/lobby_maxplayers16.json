@@ -4,16 +4,36 @@
   "description": "(Server only) Allows you to select up to 16 max players on a lobby game settings",
   "patches": [
     {
-      "id": "patch1",
+      "id": "patch_slider",
       "pattern": [
         "B8 08 00 00 00",
         "41 BD 04 00 00 00",
-        "83 7B 60 01"
+        "83 7B 60 01",
+        "41 0f 44 c5"
       ],
       "replacements": [
         {
           "index": 1,
           "bytes": "10"
+        },
+        {
+          "index": 11,
+          "bytes": "90 90 90 90 90 90 90 90"
+        }
+      ]
+    },
+    {
+      "id": "patch_cooperative",
+      "pattern": [
+        "0f 4f c1",
+        "89 73 44",
+        "89 43 4c",
+        "44 89 7b 6c"
+      ],
+      "replacements": [
+        {
+          "index": 0,
+          "bytes": "90 90 90"
         }
       ]
     }
@@ -22,7 +42,7 @@
     {
       "id": "default",
       "name": "Default",
-      "patches": [ "patch1" ]
+      "patches": [ "patch_slider", "patch_cooperative" ]
     }
   ]
 }
