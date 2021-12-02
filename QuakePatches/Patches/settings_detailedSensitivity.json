@@ -6,42 +6,42 @@
     {
       "id": "patch_slider_steps",
       "pattern": [
-        "f3 0f 10 3d 35 80 4d 00",
+        "f3 44 0f 10 05 b8 1a 50 00",
         "45 0f 57 d2",
         "83 bb 90 00 00 00 00"
       ],
       "replacements": [
         {
-          "index": 4,
-          "bytes": "fd 7f 4d 00"
+          "index": 5,
+          "bytes": "80 1a 50 00"
         }
       ]
     },
     {
       "id": "patch_slider_max",
       "pattern": [
-        "f3 0f 10 05 4d 82 4d 00",
+        "f3 0f 10 05 cb 1c 50 00",
         "f3 0f 11 44 24 20",
-        "0f 28 df"
+        "41 0f 28 d8"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "a9 82 4d 00"
+          "bytes": "27 1d 50 00"
         }
       ]
     },
     {
       "id": "patch_cvar",
       "pattern": [
-        "f3 0f 10 05 25 97 82 00",
-        "f3 0f 11 44 24 30",
-        "f3 0f 10 0d f7 93 82 00"
+        "c6 44 24 38 01",
+        "f3 0f 10 05 e5 16 88 00",
+        "f3 0f 11 44 24 30"
       ],
       "replacements": [
         {
-          "index": 4,
-          "bytes": "81 97 82 00"
+          "index": 9,
+          "bytes": "e9 1c e4 00"
         }
       ]
     }
