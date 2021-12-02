@@ -1,19 +1,47 @@
 {
   "id": "lobby_avoidLobbyOnChangeLevel",
   "name": "Do not go to lobby on changelevel",
-  "description": "(Server only) Does not go back to the lobby when playing deathmatch and instead moves on to the next map",
+  "description": "(Server only) Does not go back to the lobby when playing deathmatch and instead moves on to the next map. This is controlled via sv_quitAfterChangeLevel cvar. If set to 1, it will go back to the lobby. If set to 0, it will go straight to the next map.",
   "patches": [
     {
-      "id": "patch1",
+      "id": "patch_deathmatch_check",
       "pattern": [
-        "3C 01",
-        "75 56",
-        "B9 02 00 00 00"
+        "48 8d 0d 72 22 8b 01",
+        "e8 9d 4e f5 ff",
+        "3c 01"
       ],
       "replacements": [
         {
-          "index": 1,
-          "bytes": "02"
+          "index": 3,
+          "bytes": "32 29 8b 01"
+        }
+      ]
+    },
+    {
+      "id": "patch_horde_check",
+      "pattern": [
+        "48 8d 0d 7c 23 8b 01",
+        "e8 87 4e f5 ff",
+        "3c 01"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "1c 29 8b 01"
+        }
+      ]
+    },
+    {
+      "id": "remove_sv_quitAfterChangeLevel_functionality",
+      "pattern": [
+        "e8 71 4e f5 ff",
+        "84 c0",
+        "74 25"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "eb"
         }
       ]
     }
@@ -22,7 +50,7 @@
     {
       "id": "default",
       "name": "Default",
-      "patches": [ "patch1" ]
+      "patches": [ "patch_deathmatch_check", "patch_horde_check", "remove_sv_quitAfterChangeLevel_functionality" ]
     }
   ]
 }
