@@ -6,13 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Patches\crosshair_style.json">
+    <None Update="Patches\crosshair_style.json.obsolete">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Patches\lobby_avoidLobbyOnChangeLevel.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Patches\botnav_disablePlacementCheck.json">
+    <None Update="Patches\botnav_disablePlacementCheck.json.obsolete">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Patches\lobby_maxplayers16.json">
