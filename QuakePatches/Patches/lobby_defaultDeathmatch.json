@@ -1,7 +1,7 @@
 ﻿{
   "id": "mode_defaultDeathmatch",
   "name": "Default deathmatch mode",
-  "description": "Changes the default deathmatch mode when creating a lobby",
+  "description": "Changes the default deathmatch mode when creating a lobby. Keep in mind that it might not affect third-party mods.",
   "patches": [
     {
       "id": "patch",
