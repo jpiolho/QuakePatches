@@ -1,0 +1,56 @@
+﻿{
+  "id": "mode_defaultDeathmatch",
+  "name": "Default deathmatch mode",
+  "description": "Changes the default deathmatch mode when creating a lobby",
+  "patches": [
+    {
+      "id": "patch",
+      "pattern": [
+        "4c 89 3b",
+        "48 c7 43 08 03 00 00 00",
+        "89 73 6c"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "%mode%"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "1",
+      "name": "Mode 1 (Weapons do not stay)",
+      "patches": [ "patch" ],
+      "variables": [
+        {
+          "variable": "mode",
+          "value": "01"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Mode 2 (Items don't respawn)",
+      "patches": [ "patch" ],
+      "variables": [
+        {
+          "variable": "mode",
+          "value": "02"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Mode 3 (Default, weapon stay)",
+      "patches": [ "patch" ],
+      "variables": [
+        {
+          "variable": "mode",
+          "value": "03"
+        }
+      ]
+    }
+  ]
+}
