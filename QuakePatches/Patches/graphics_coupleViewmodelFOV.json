@@ -1,0 +1,68 @@
+{
+  "id": "graphics_coupleViewmodelFOV",
+  "name": "Couple weapon FOV to game FOV",
+  "description": "Restores viewmodel FOV coupling to the game FOV. Without this patch, the viewmodel FOV is fixed",
+  "patches": [
+    {
+      "id": "patch_jump_1",
+      "pattern": [
+        "80 bd 88 02 00 00 00",
+        "75 2f"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "EB"
+        }
+      ]
+    },
+    {
+      "id": "patch_jump_2",
+      "pattern": [
+        "80 bd c8 02 00 00 00",
+        "75 2f",
+        "48 63 47 18"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "EB"
+        }
+      ]
+    },
+    {
+      "id": "patch_jump_3",
+      "pattern": [
+        "80 bd d8 03 00 00 00",
+        "75 2f",
+        "49 63 47 1c"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "EB"
+        }
+      ]
+    },
+    {
+      "id": "patch_jump_4",
+      "pattern": [
+        "48 3b fb",
+        "0f 85 88 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "E9 89 00 00 00 90"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_jump_1", "patch_jump_2", "patch_jump_3", "patch_jump_4" ]
+    }
+  ]
+}

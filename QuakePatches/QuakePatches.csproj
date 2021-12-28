@@ -9,6 +9,9 @@
     <None Update="Patches\crosshair_style.json.obsolete">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
+    <None Update="Patches\graphics_coupleViewmodelFOV.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Patches\lobby_avoidLobbyOnChangeLevel.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
