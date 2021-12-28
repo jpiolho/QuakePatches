@@ -24,6 +24,15 @@ namespace QuakePatches
 
         static void Main(string[] args)
         {
+            if (!RunProgram(args))
+            {
+                Console.WriteLine("Press any key to close the program...");
+                Console.ReadKey();
+            }
+        }
+
+        static bool RunProgram(string[] args)
+        {
             // Set default colors
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.BackgroundColor = ConsoleColor.Black;
@@ -33,7 +42,7 @@ namespace QuakePatches
             if (!File.Exists(_binaryPath))
             {
                 Console.WriteLine($"ERROR: Cannot find '{BinaryName}'. Put this in the same folder or drag & drop the exe into this program");
-                return;
+                return false;
             }
 
             PrintWarningAndWaitConfirmation();
@@ -60,7 +69,7 @@ namespace QuakePatches
                 if (binary.Patched != PatchedBinary.PatchStatus.Unpatched)
                 {
                     Console.WriteLine("FAILURE: The binary that was provided is not an original unpatched binary.");
-                    return;
+                    return false;
                 }
 
                 File.Copy(_binaryPath, originalPath);
@@ -75,7 +84,7 @@ namespace QuakePatches
             if (_originalBinary.Patched != PatchedBinary.PatchStatus.Unpatched)
             {
                 Console.WriteLine("FAILURE: The original binary is not an unpatched version. Please delete it and make sure you make a new copy");
-                return;
+                return false;
             }
 
             // Do some version checks between original and backup
@@ -90,14 +99,14 @@ namespace QuakePatches
                 if (_originalBinary.GetBinaryHash() != binary.OriginalHash)
                 {
                     Console.WriteLine("FAILURE: The binary is patched, but the backup is for a different game version.");
-                    return;
+                    return false;
                 }
             }
 
             if (_originalBinary.GetBinaryHash() != (binary.OriginalHash ?? binary.GetBinaryHash()))
             {
                 Console.WriteLine("FAILURE: The binary and backup are for a different game version.");
-                return;
+                return false;
             }
 
             Console.WriteLine("OK");
@@ -122,9 +131,19 @@ namespace QuakePatches
 
 
 
-            MenuPatches();
+            try
+            {
+                MenuPatches();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("EXCEPTION: " + ex.ToString());
+                return false;
+            }
 
+            return true;
         }
+
 
         /// <summary>
         /// Given the provided patched binary, it will select all the variants that are present in the binary.
