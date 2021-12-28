@@ -194,6 +194,15 @@ namespace QuakePatches
             int page = 0;
             var pagesCount = Math.Ceiling(_patches.Count / (float)ItemsPerPage);
 
+            void PrintPagination()
+            {
+                Console.Write($"Page ");
+
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"{page + 1}/{pagesCount}");
+                Console.ResetColor();
+            }
+
 
             while (true)
             {
@@ -204,8 +213,11 @@ namespace QuakePatches
                 var start = page * ItemsPerPage;
                 var end = Math.Min(_patches.Count, start + ItemsPerPage);
 
-                // Print pagination
-                Console.WriteLine($"Page {page + 1}/{pagesCount}");
+                // Print pagination at top
+                PrintPagination();
+
+                Console.WriteLine();
+
 
                 // Print patches menu
                 for (var i = start; i < end; i++)
@@ -249,6 +261,9 @@ namespace QuakePatches
                 }
 
                 Console.ResetColor();
+
+                // Print pagination at bottom
+                PrintPagination();
 
                 // Print keys
                 Console.WriteLine();
