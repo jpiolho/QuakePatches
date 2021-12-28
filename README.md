@@ -12,6 +12,9 @@ This tool is made specifically for Quake Enhanced but can be easily adapted to a
 
 ## FAQ
 
+### **Is this considered cheating?**
+Officially we're not going to support cheating of any kind. However, it's possible that some patches might be considered cheating by other people, so use at your own risk and ask the community beforehand if you're in doubt.
+
 ### **How to restore the original executable?**
 You can find a backup in the same folder as QuakePatches. A file named Quake_x64_steam.exe.original file will be present. This is a backup of the original unpatched quake executable.
 
