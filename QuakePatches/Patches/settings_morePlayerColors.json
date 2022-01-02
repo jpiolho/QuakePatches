@@ -1,0 +1,59 @@
+{
+  "id": "settings_morePlayerColors",
+  "name": "More Player Colors",
+  "description": "Allows 2 extra player colors: A bright orange (14) and a red with yellow sparkles (15). NOTE that if you're not creating your own lobby, the lobby creator must also have the patch in order to allow these colors.",
+  "patches": [
+    {
+      "id": "patch_settings_pants_slider",
+      "pattern": [
+        "48 8d 15 b5 3d 4f 00",
+        "c6 44 24 38 00",
+        "45 33 c9",
+        "c7 44 24 20 0d 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 19,
+          "bytes": "0F"
+        }
+      ]
+    },
+    {
+      "id": "patch_settings_shirt_slider",
+      "pattern": [
+        "48 8d 15 0b 3e 4f 00",
+        "c6 44 24 38 00",
+        "45 33 c9",
+        "c7 44 24 20 0d 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 19,
+          "bytes": "0F"
+        }
+      ]
+    },
+    {
+      "id": "patch_color_command",
+      "pattern": [
+        "83 e3 0f",
+        "8b f8",
+        "b8 0d 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 6,
+          "bytes": "0F"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_settings_pants_slider", "patch_settings_shirt_slider", "patch_color_command" ]
+    }
+  ]
+
+}
