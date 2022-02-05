@@ -1,0 +1,28 @@
+﻿{
+  "id": "game_allowChatNonPlayfab",
+  "name": "Allow chat in non-playfab game",
+  "description": "(Client only) Unlocks the chat screen in single-player, local games and direct connection games.",
+  "patches": [
+    {
+      "id": "patch_check",
+      "pattern": [
+        "48 83 ec 28",
+        "48 8b 0d 4d 01 71 01",
+        "48 85 c9"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "48 31 C9 90 90 90 90"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_check" ]
+    }
+  ]
+}

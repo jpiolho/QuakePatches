@@ -21,6 +21,9 @@
     <None Update="Patches\lobby_defaultDeathmatch.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Patches\game_allowChatNonPlayfab.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Patches\lobby_maxplayers16.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
