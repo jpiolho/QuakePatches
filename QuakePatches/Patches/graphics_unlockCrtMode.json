@@ -1,0 +1,41 @@
+{
+  "id": "graphics_unlockCrtMode",
+  "name": "Unlock CRT Mode",
+  "description": "Allows CRT mode setting in any mod",
+  "patches": [
+    {
+      "id": "patch_options",
+      "pattern": [
+        "80 3d fd 3d 50 01 00",
+        "74 16"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "90 90"
+        }
+      ]
+    },
+    {
+      "id": "patch_check",
+      "pattern": [
+        "80 3d 53 fd 55 01 00",
+        "48 8b d9",
+        "0f 84 9f 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 10,
+          "bytes": "90 90 90 90 90 90"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_options", "patch_check" ]
+    }
+  ]
+}
