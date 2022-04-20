@@ -151,7 +151,7 @@ namespace QuakePatches
             foreach (var patch in patches)
             {
                 // Find the pattern
-                var pattern = Convert.FromHexString(DoVariantVariableReplacement(string.Join(" ", patch.Pattern).Trim(), variant).Replace(" ", ""));
+                var pattern = PatternToByteArray(patch.Pattern, variant);
                 var matches = IndexOf(pattern);
 
                 if (matches.Length != 1)
@@ -181,6 +181,29 @@ namespace QuakePatches
             _writer.Write(json.ToCharArray());
         }
 
+        private byte?[] PatternToByteArray(string[] patchPattern, PatchVariant variant)
+        {
+            var pattern = DoVariantVariableReplacement(string.Join(" ", patchPattern).Trim(), variant).Replace(" ", "");
+
+            if (pattern.Length % 2 != 0)
+                throw new PatchingException("Pattern is not divisble by 2");
+
+            byte?[] array = new byte?[pattern.Length / 2];
+
+            // Go byte by byte in the hex pattern
+            for(int i=0,x=0;i<array.Length;i++,x+=2)
+            {
+                var b = pattern.Substring(x, 2);
+
+                if (b == "**")
+                    array[i] = null;
+                else
+                    array[i] = Convert.FromHexString(b)[0];
+            }
+
+            return array;
+        }
+
         private string DoVariantVariableReplacement(string text, PatchVariant variant)
         {
             // If no variables specified, just return the original text
@@ -195,7 +218,19 @@ namespace QuakePatches
             return sb.ToString();
         }
 
-        private int[] IndexOf(byte[] pattern)
+        private byte?[] ByteArrayToNullableByteArray(byte[] array)
+        {
+            var newArray = new byte?[array.Length];
+            for(var i=0;i<array.Length;i++)
+            {
+                newArray[i] = array[i];
+            }
+
+            return newArray;
+        }
+
+        private int[] IndexOf(byte[] pattern) => IndexOf(ByteArrayToNullableByteArray(pattern));
+        private int[] IndexOf(byte?[] pattern)
         {
             _stream.Position = 0;
 
@@ -206,14 +241,17 @@ namespace QuakePatches
             {
                 var b = _reader.ReadByte();
 
-                if (b != pattern[pi])
+                var pb = pattern[pi];
+
+
+                if (pb != null && b != pb)
                 {
                     // Failed match, reset
                     pi = 0;
                     startIndex = -1;
                 }
 
-                if (b == pattern[pi])
+                if (pb == null || b == pattern[pi])
                 {
                     // First match?
                     if (startIndex == -1)
