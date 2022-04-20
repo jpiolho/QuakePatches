@@ -154,8 +154,14 @@ namespace QuakePatches
                 var pattern = PatternToByteArray(patch.Pattern, variant);
                 var matches = IndexOf(pattern);
 
-                if (matches.Length != 1)
+                // Check if there was at least 1 match
+                if (matches.Length < 1)
                     throw new PatchingException("Could not find a match for the pattern");
+
+                // Throw exception if there's more than 1 match
+                if (matches.Length > 1)
+                    throw new PatchingException("More than 1 match was found. Only 1 match is supported");
+
 
                 // Do all the replacements
                 foreach (var replacement in patch.Replacements)
