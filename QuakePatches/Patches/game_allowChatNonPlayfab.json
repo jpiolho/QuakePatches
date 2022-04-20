@@ -7,8 +7,9 @@
       "id": "patch_check",
       "pattern": [
         "48 83 ec 28",
-        "48 8b 0d 4d 01 71 01",
-        "48 85 c9"
+        "48 8b 0d ** ** ** **",
+        "48 85 c9",
+        "74 0d"
       ],
       "replacements": [
         {
