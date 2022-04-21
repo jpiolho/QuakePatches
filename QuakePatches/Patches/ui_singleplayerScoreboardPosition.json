@@ -1,0 +1,54 @@
+﻿{
+  "id": "ui_singleplayerScoreboardPosition",
+  "name": "Set single-player scoreboard position",
+  "description": "(Client only) Sets the single-player scoreboard position",
+  "patches": [
+    {
+      "id": "patch_position",
+      "pattern": [
+        "f3 0f 10 05 28 cc 6b 00"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "%position_y%"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Lower Center (default)",
+      "patches": [ "patch_position" ],
+      "variables": [
+        {
+          "variable": "position_y",
+          "value": "28 CC 6B 00"
+        }
+      ]
+    },
+    {
+      "id": "upper_center",
+      "name": "Upper Center",
+      "patches": [ "patch_position" ],
+      "variables": [
+        {
+          "variable": "position_y",
+          "value": "84 CB 6B 00"
+        }
+      ]
+    },
+    {
+      "id": "center",
+      "name": "Center",
+      "patches": [ "patch_position" ],
+      "variables": [
+        {
+          "variable": "position_y",
+          "value": "E0 CB 6B 00"
+        }
+      ]
+    }
+  ]
+}

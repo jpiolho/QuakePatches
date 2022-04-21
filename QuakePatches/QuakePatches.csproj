@@ -39,6 +39,9 @@
     <None Update="Patches\settings_engineHZOverride.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Patches\ui_singleplayerScoreboardPosition.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
