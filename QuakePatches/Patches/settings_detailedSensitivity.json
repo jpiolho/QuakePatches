@@ -6,28 +6,28 @@
     {
       "id": "patch_slider_steps",
       "pattern": [
-        "f3 44 0f 10 05 b8 1a 50 00",
+        "f3 44 0f 10 05 97 48 50 00",
         "45 0f 57 d2",
         "83 bb 90 00 00 00 00"
       ],
       "replacements": [
         {
           "index": 5,
-          "bytes": "80 1a 50 00"
+          "bytes": "5f 48 50 00"
         }
       ]
     },
     {
       "id": "patch_slider_max",
       "pattern": [
-        "f3 0f 10 05 cb 1c 50 00",
+        "f3 0f 10 05 ca 4a 50 00",
         "f3 0f 11 44 24 20",
         "41 0f 28 d8"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "27 1d 50 00"
+          "bytes": "26 4b 50 00"
         }
       ]
     },
@@ -35,13 +35,13 @@
       "id": "patch_cvar",
       "pattern": [
         "c6 44 24 38 01",
-        "f3 0f 10 05 e5 16 88 00",
+        "f3 0f 10 05 6d cc 88 00",
         "f3 0f 11 44 24 30"
       ],
       "replacements": [
         {
           "index": 9,
-          "bytes": "e9 1c e4 00"
+          "bytes": "c9 cc 88 00"
         }
       ]
     }
