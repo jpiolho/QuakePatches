@@ -6,14 +6,16 @@
     {
       "id": "patch_settings_pants_slider",
       "pattern": [
-        "48 8d 15 b5 3d 4f 00",
+        "4c 8d 45 67",
+        "c6 44 24 40 00",
+        "48 8d 15 ** ** 4f 00",
         "c6 44 24 38 00",
         "45 33 c9",
         "c7 44 24 20 0d 00 00 00"
       ],
       "replacements": [
         {
-          "index": 19,
+          "index": 28,
           "bytes": "0F"
         }
       ]
@@ -21,14 +23,16 @@
     {
       "id": "patch_settings_shirt_slider",
       "pattern": [
-        "48 8d 15 0b 3e 4f 00",
+        "4c 8d 45 6f",
+        "c6 44 24 40 00",
+        "48 8d 15 ** ** 4f 00",
         "c6 44 24 38 00",
         "45 33 c9",
         "c7 44 24 20 0d 00 00 00"
       ],
       "replacements": [
         {
-          "index": 19,
+          "index": 28,
           "bytes": "0F"
         }
       ]
