@@ -40,13 +40,13 @@
     {
       "id": "patch_color_command",
       "pattern": [
-        "83 e3 0f",
-        "8b f8",
+        "83 e7 0f",
+        "44 8b f8",
         "b8 0d 00 00 00"
       ],
       "replacements": [
         {
-          "index": 6,
+          "index": 7,
           "bytes": "0F"
         }
       ]
