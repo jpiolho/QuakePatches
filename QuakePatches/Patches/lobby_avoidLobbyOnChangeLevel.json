@@ -6,35 +6,35 @@
     {
       "id": "patch_deathmatch_check",
       "pattern": [
-        "48 8d 0d b2 c7 8c 01",
-        "e8 1d 47 f5 ff",
+        "48 8d 0d d2 96 8d 01",
+        "e8 fd 2f f5 ff",
         "3c 01"
       ],
       "replacements": [
         {
           "index": 3,
-          "bytes": "72 ce 8c 01"
+          "bytes": "22 9e 8d 01"
         }
       ]
     },
     {
       "id": "patch_horde_check",
       "pattern": [
-        "48 8d 0d bc c8 8c 01",
-        "e8 07 47 f5 ff",
+        "48 8d 0d dc 97 8d 01",
+        "e8 e7 2f f5 ff",
         "3c 01"
       ],
       "replacements": [
         {
           "index": 3,
-          "bytes": "5c ce 8c 01"
+          "bytes": "0c 9e 8d 01"
         }
       ]
     },
     {
       "id": "remove_sv_quitAfterChangeLevel_functionality",
       "pattern": [
-        "e8 f1 46 f5 ff",
+        "e8 d1 2f f5 ff",
         "84 c0",
         "74 25"
       ],
