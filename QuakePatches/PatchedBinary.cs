@@ -1,9 +1,10 @@
 ﻿using QuakePatches.Exceptions;
-using QuakePatches.Patches;
+using QuakePatches.Patching;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -32,8 +33,17 @@ namespace QuakePatches
         public string PatchProgramHash { get; private set; }
         public string OriginalHash { get; private set; }
 
-        public byte[] FullBinary => _stream.ToArray();
-        public byte[] Binary
+        public ArraySegment<byte> FullBinary
+        {
+            get
+            {
+                if (!_stream.TryGetBuffer(out var buffer))
+                    throw new Exception("Failed to get buffer");
+                return buffer;
+            }
+        }
+
+        public ArraySegment<byte> Binary
         {
             get
             {
@@ -45,7 +55,11 @@ namespace QuakePatches
                 try
                 {
                     _stream.Position = 0;
-                    return _reader.ReadBytes(_markerOffset);
+
+                    if (!_stream.TryGetBuffer(out var buffer))
+                        throw new Exception("Failed to get buffer");
+
+                    return buffer.Slice(0, _markerOffset);
                 }
                 finally
                 {
@@ -54,7 +68,19 @@ namespace QuakePatches
             }
         }
 
+        public ArraySegment<byte> ConstData
+        {
+            get
+            {
+                var rdata = PEHeader.SectionHeaders.First(h => h.Name == ".rdata");
+                _stream.TryGetBuffer(out var buffer);
+                return buffer.Slice(rdata.PointerToRawData, rdata.SizeOfRawData);
+            }
+        }
+
         public PatchStatus Patched { get; private set; }
+
+        public PEHeaders PEHeader { get; private set; }
 
         public PatchedBinary()
         {
@@ -76,6 +102,11 @@ namespace QuakePatches
 
             _stream.Write(binary);
             _stream.Position = 0;
+
+            // Read PEHeaders
+            PEHeader = new PEHeaders(_stream);
+            _stream.Position = 0;
+
 
             // Find marker index
             var markerBytes = Encoding.UTF8.GetBytes(PatchMarker);
@@ -169,7 +200,11 @@ namespace QuakePatches
                     var index = matches[0];
 
                     index += replacement.Index;
-                    var bytes = Convert.FromHexString(DoVariantVariableReplacement(replacement.Bytes, variant).Trim().Replace(" ", ""));
+
+                    byte[] bytes = null;
+
+                    if (replacement.Bytes != null)
+                        bytes = Convert.FromHexString(DoVariantVariableReplacement(replacement.Bytes, variant).Trim().Replace(" ", ""));
 
                     _stream.Position = index;
                     _stream.Write(bytes);
@@ -197,7 +232,7 @@ namespace QuakePatches
             byte?[] array = new byte?[pattern.Length / 2];
 
             // Go byte by byte in the hex pattern
-            for(int i=0,x=0;i<array.Length;i++,x+=2)
+            for (int i = 0, x = 0; i < array.Length; i++, x += 2)
             {
                 var b = pattern.Substring(x, 2);
 
@@ -227,7 +262,7 @@ namespace QuakePatches
         private byte?[] ByteArrayToNullableByteArray(byte[] array)
         {
             var newArray = new byte?[array.Length];
-            for(var i=0;i<array.Length;i++)
+            for (var i = 0; i < array.Length; i++)
             {
                 newArray[i] = array[i];
             }
@@ -238,14 +273,13 @@ namespace QuakePatches
         private int[] IndexOf(byte[] pattern) => IndexOf(ByteArrayToNullableByteArray(pattern));
         private int[] IndexOf(byte?[] pattern)
         {
-            _stream.Position = 0;
+            var arr = Binary;
 
             var startIndex = -1;
-            var end = _markerOffset == -1 ? _stream.Length : _markerOffset;
-            var indexes = new List<int>();
-            for (int i = 0, pi = 0; i < end; i++)
+            var indexes = new List<int>(1);
+            for (int i = 0, pi = 0; i < arr.Count; i++)
             {
-                var b = _reader.ReadByte();
+                var b = arr[i];
 
                 var pb = pattern[pi];
 
@@ -282,7 +316,7 @@ namespace QuakePatches
         public string GetBinaryHash()
         {
             using (var sha512 = SHA512.Create())
-                return Convert.ToHexString(sha512.ComputeHash(Binary));
+                return Convert.ToHexString(sha512.ComputeHash(Binary.Array));
         }
 
         public void Dispose()

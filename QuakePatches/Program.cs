@@ -1,4 +1,4 @@
-﻿using QuakePatches.Patches;
+﻿using QuakePatches.Patching;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -130,12 +130,11 @@ namespace QuakePatches
             //Thread.Sleep(TimeSpan.FromSeconds(4));
 
 
-
             try
             {
                 MenuPatches();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("EXCEPTION: " + ex.ToString());
                 return false;
@@ -305,7 +304,7 @@ namespace QuakePatches
                             }
 
                             // If only one variant, select that one
-                            if(filePatch.Patch.Variants.Length == 1)
+                            if (filePatch.Patch.Variants.Length == 1)
                             {
                                 filePatch.SelectedVariant = filePatch.Patch.Variants[0];
                                 break;
@@ -385,7 +384,7 @@ namespace QuakePatches
 
             Console.WriteLine("Starting patching...");
 
-            var binary = new PatchedBinary(_originalBinary.FullBinary, _originalBinary.PatchProgramHash);
+            var binary = new PatchedBinary(_originalBinary.FullBinary.ToArray(), _originalBinary.PatchProgramHash);
 
             bool fullSuccess = true;
             int count = 0;
@@ -431,7 +430,7 @@ namespace QuakePatches
             }
 
             Console.Write($"Writing patched binary to '{_binaryPath}'");
-            File.WriteAllBytes(_binaryPath, binary.FullBinary);
+            File.WriteAllBytes(_binaryPath, binary.FullBinary.ToArray());
             Console.WriteLine(" DONE");
 
             Console.WriteLine();
@@ -451,7 +450,7 @@ namespace QuakePatches
                 foreach (var file in new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Patches")).GetFiles("*.json"))
                 {
                     var patch = JsonSerializer.Deserialize<PatchFile>(File.ReadAllText(file.FullName), _jsonSerializerOptions);
-                    
+
                     _patches.Add(new LoadedPatchFile()
                     {
                         Patch = patch,
