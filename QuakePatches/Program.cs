@@ -13,7 +13,8 @@ namespace QuakePatches
         private static JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions()
         {
             PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            ReadCommentHandling = JsonCommentHandling.Skip
         };
         const string BinaryName = "Quake_x64_steam.exe";
 
