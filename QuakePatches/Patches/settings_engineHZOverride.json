@@ -6,18 +6,18 @@
     {
       "id": "patch_cvar",
       "pattern": [
-        "f3 0f 10 05 69 3c 89 00",
+        "f3 0f 10 05 49 e9 89 00",
         "f3 0f 11 44 24 30",
-        "f3 0f 10 0d bf 3b 89 00"
+        "f3 0f 10 0d 9f e8 89 00"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "ed 3d 89 00"
+          "bytes": "d5 ea 89 00"
         },
         {
           "index": 18,
-          "bytes": "5b 39 89 00"
+          "bytes": "3b e6 89 00"
         }
       ]
     }
