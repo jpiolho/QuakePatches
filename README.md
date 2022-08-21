@@ -6,7 +6,7 @@ This tool is made specifically for Quake Enhanced but can be easily adapted to a
 
 ## How to use
 
-**This tool requires .NET 6.0 in order to run.**
+**This tool requires [.NET 6.0 Runtime](https://dotnet.microsoft.com/en-us/download) in order to run.**
 
 1. Extract the tool in any folder
 2. Either copy Quake_x64_steam.exe to the same folder or drag & drop it into the QuakePatches executable
