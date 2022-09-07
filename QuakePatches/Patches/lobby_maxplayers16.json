@@ -20,13 +20,26 @@
           "bytes": "10"
         }
       ]
+    },
+    {
+      "id": "patch_maxplayersMax",
+      "pattern": [
+        "8d 7e 03",
+        "83 f8 05"
+      ],
+      "replacements": [
+        {
+          "index": 2,
+          "bytes": "0F"
+        }
+      ]
     }
   ],
   "variants": [
     {
       "id": "default",
       "name": "Default",
-      "patches": [ "patch_switch" ]
+      "patches": [ "patch_switch", "patch_maxplayersMax" ]
     }
   ]
 }
