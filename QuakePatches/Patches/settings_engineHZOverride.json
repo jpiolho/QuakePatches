@@ -6,18 +6,23 @@
     {
       "id": "patch_cvar",
       "pattern": [
-        "f3 0f 10 05 49 e9 89 00",
+        "f3 0f 10 05 29 ea 89 00",
         "f3 0f 11 44 24 30",
-        "f3 0f 10 0d 9f e8 89 00"
+        "f3 0f 10 0d 7f e9 89 00",
+        "f3 0f 11 4c 24 28"
       ],
       "replacements": [
         {
-          "index": 4,
-          "bytes": "d5 ea 89 00"
+          "index": 0,
+          "bytes": "c7 44 24 30 00 3c 1c 46" // float: 9999
         },
         {
-          "index": 18,
-          "bytes": "3b e6 89 00"
+          "index": 8,
+          "bytes": "c7 44 24 28 00 00 80 3f" // float: 1
+        },
+        {
+          "index": 16,
+          "bytes": "90 90 90 90 90 90 90 90 90 90 90 90" // nopes
         }
       ]
     }
