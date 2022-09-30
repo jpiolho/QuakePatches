@@ -34,14 +34,17 @@
     {
       "id": "patch_cvar",
       "pattern": [
-        "c6 44 24 38 01",
         "f3 0f 10 05 7d 7a 89 00",
         "f3 0f 11 44 24 30"
       ],
       "replacements": [
         {
-          "index": 9,
-          "bytes": "d9 7a 89 00"
+          "index": 0,
+          "bytes": "c7 44 24 30 00 00 f0 41" // float: 30
+        },
+        {
+          "index": 8,
+          "bytes": "90 90 90 90 90 90" // nopes
         }
       ]
     }
