@@ -1,4 +1,7 @@
-﻿using QuakePatches.Patching;
+﻿using AsmResolver;
+using AsmResolver.PE.File;
+using AsmResolver.PE.File.Headers;
+using QuakePatches.Patching;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -57,7 +60,8 @@ namespace QuakePatches
             Console.WriteLine(_ownHash);
 
             Console.Write($"Loading '{_binaryPath}'... ");
-            var binary = new PatchedBinary(File.ReadAllBytes(_binaryPath), _ownHash);
+            var bytes = File.ReadAllBytes(_binaryPath);
+            var binary = new PatchedBinary(bytes, _ownHash);
             Console.WriteLine("Loaded");
 
             // Make sure the backup exists and that it's fine
@@ -387,6 +391,8 @@ namespace QuakePatches
 
             var binary = new PatchedBinary(_originalBinary.FullBinary.ToArray(), _originalBinary.PatchProgramHash);
 
+            binary.BeginPatches();
+
             bool fullSuccess = true;
             int count = 0;
             foreach (var filePatch in _patches.Where(p => p.IsSelected))
@@ -431,7 +437,7 @@ namespace QuakePatches
             }
 
             Console.Write($"Writing patched binary to '{_binaryPath}'");
-            File.WriteAllBytes(_binaryPath, binary.FullBinary.ToArray());
+            binary.Save(_binaryPath);
             Console.WriteLine(" DONE");
 
             Console.WriteLine();

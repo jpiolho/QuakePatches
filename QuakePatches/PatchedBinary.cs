@@ -1,13 +1,18 @@
-﻿using QuakePatches.Exceptions;
+﻿using AsmResolver;
+using AsmResolver.PE.File;
+using AsmResolver.PE.File.Headers;
+using QuakePatches.Exceptions;
 using QuakePatches.Patching;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuakePatches
 {
@@ -21,74 +26,27 @@ namespace QuakePatches
             Corrupted
         }
 
-        private const string PatchMarker = "[QPATCH_MARKER]";
+        private const string PatchSection = "QPATCH.I";
 
-        private MemoryStream _stream;
-        private BinaryReader _reader;
-        private BinaryWriter _writer;
-        private int _markerOffset = -1;
-        private List<AppliedPatch> _appliedPatches;
+        private byte[] _originalBinary;
+        private PatchedBinarySection _patchedInfo;
+        private Dictionary<string, (PESection,MemoryStream)> _sectionStreams;
 
-        public IReadOnlyList<AppliedPatch> AppliedPatches => _appliedPatches.AsReadOnly();
-        public string PatchProgramHash { get; private set; }
-        public string OriginalHash { get; private set; }
+        public IReadOnlyList<AppliedPatch> AppliedPatches => _patchedInfo.AppliedPatches.AsReadOnly();
+        public string PatchProgramHash => _patchedInfo.HashPatchingProgram;
+        public string OriginalHash => _patchedInfo.HashOriginalProgram;
 
-        public ArraySegment<byte> FullBinary
-        {
-            get
-            {
-                if (!_stream.TryGetBuffer(out var buffer))
-                    throw new Exception("Failed to get buffer");
-                return buffer;
-            }
-        }
 
-        public ArraySegment<byte> Binary
-        {
-            get
-            {
-                // If there's no marker, this is identical to FullBinary
-                if (_markerOffset == -1)
-                    return FullBinary;
-
-                var pos = _stream.Position;
-                try
-                {
-                    _stream.Position = 0;
-
-                    if (!_stream.TryGetBuffer(out var buffer))
-                        throw new Exception("Failed to get buffer");
-
-                    return buffer.Slice(0, _markerOffset);
-                }
-                finally
-                {
-                    _stream.Position = pos;
-                }
-            }
-        }
-
-        public ArraySegment<byte> ConstData
-        {
-            get
-            {
-                var rdata = PEHeader.SectionHeaders.First(h => h.Name == ".rdata");
-                _stream.TryGetBuffer(out var buffer);
-                return buffer.Slice(rdata.PointerToRawData, rdata.SizeOfRawData);
-            }
-        }
+        public byte[] FullBinary => _originalBinary;
 
         public PatchStatus Patched { get; private set; }
 
-        public PEHeaders PEHeader { get; private set; }
+        public PEFile PE { get; private set; }
 
         public PatchedBinary()
         {
-            _appliedPatches = new List<AppliedPatch>();
-            _stream = new MemoryStream();
-
-            _reader = new BinaryReader(_stream);
-            _writer = new BinaryWriter(_stream);
+            _patchedInfo = new PatchedBinarySection();
+            _originalBinary = null;
         }
 
         public PatchedBinary(byte[] binary, string patchProgramHash) : this()
@@ -98,47 +56,56 @@ namespace QuakePatches
 
         public PatchStatus Load(byte[] binary, string patchProgramHash)
         {
-            PatchProgramHash = patchProgramHash;
+            _originalBinary = binary;
 
-            _stream.Write(binary);
-            _stream.Position = 0;
 
             // Read PEHeaders
-            PEHeader = new PEHeaders(_stream);
-            _stream.Position = 0;
+            PE = PEFile.FromBytes(binary);
 
 
-            // Find marker index
-            var markerBytes = Encoding.UTF8.GetBytes(PatchMarker);
-            var patchIndexes = IndexOf(markerBytes);
-            _markerOffset = patchIndexes.Length == 1 ? patchIndexes[0] : -1;
+            // Set the patching program hash
+            _patchedInfo.HashPatchingProgram = patchProgramHash;
+
+            // Load all sections into streams
+            _sectionStreams = new Dictionary<string, (PESection,MemoryStream)>();
+            foreach(var section in PE.Sections)
+            {
+                if (!section.IsContentCode && !section.IsContentInitializedData)
+                    continue;
+
+                var segment = section.Contents as VirtualSegment;
+                var arr = segment.ToArray();
+                _sectionStreams.Add(section.Name, (section,new MemoryStream(arr,0,arr.Length,true,true)));
+            }
+
+            var patchesSection = GetQuakePatchesSection();
 
             // Check if not patched
-            if (_markerOffset == -1)
+            if (patchesSection is null)
                 return Patched = PatchStatus.Unpatched;
 
-            // Patched?
-            _stream.Position = _markerOffset;
+            var sectionContents = patchesSection.Contents;
+            if (sectionContents is null)
+                return Patched = PatchStatus.Corrupted;
 
-            if (!_reader.ReadBytes(PatchMarker.Length).SequenceEqual(markerBytes))
+            byte[] sectionData = null;
+            if (sectionContents is DataSegment dataSegment)
+                sectionData = dataSegment.Data;
+            else if (sectionContents is VirtualSegment virtualSegment)
+                sectionData = virtualSegment.ToArray();
+
+            if (sectionData is null || sectionData.Length == 0)
                 return Patched = PatchStatus.Corrupted;
 
             try
             {
-                // Read the hashes
-                PatchProgramHash = Encoding.UTF8.GetString(_reader.ReadBytes(128));
-                OriginalHash = Encoding.UTF8.GetString(_reader.ReadBytes(128));
+                var json = Encoding.UTF8.GetString(sectionData).Trim((char)0);
+                var patchedBinarySection = JsonSerializer.Deserialize<PatchedBinarySection>(json);
 
-                // Read json
-                var jsonLength = _reader.ReadInt32();
-                var json = Encoding.UTF8.GetString(_reader.ReadBytes(jsonLength));
-
-                // Copy the applied patches list
-                var patches = JsonSerializer.Deserialize<AppliedPatch[]>(json);
-                _appliedPatches.AddRange(patches);
+                _patchedInfo = patchedBinarySection;
 
                 // Check if there's a patch program version mismatch
-                if (!string.Equals(this.PatchProgramHash, patchProgramHash, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(_patchedInfo.HashPatchingProgram, patchProgramHash, StringComparison.OrdinalIgnoreCase))
                     return Patched = PatchStatus.PatchedVersionMismatch;
 
                 return Patched = PatchStatus.Patched;
@@ -149,22 +116,15 @@ namespace QuakePatches
             }
         }
 
+        public void BeginPatches()
+        {
+            _patchedInfo.HashOriginalProgram = GetBinaryHash();
+        }
+
         public void ApplyPatch(PatchFile patchFile, PatchVariant variant)
         {
-            if (_markerOffset == -1)
-            {
-                var hash = GetBinaryHash();
-
-                // Need to create marker
-                _stream.Position = _stream.Length;
-
-                _markerOffset = (int)_stream.Position;
-
-                _writer.Write(PatchMarker.ToCharArray());
-                _writer.Write(PatchProgramHash.ToCharArray());
-                _writer.Write(hash.ToCharArray());
-                _writer.Write((int)0); // JSON Length
-            }
+            // For now, only do it for .text
+            var stream = _sectionStreams[".text"];
 
             // Load in all the patches
             var patches = new List<PatchDefinition>(variant.Patches.Length);
@@ -178,12 +138,13 @@ namespace QuakePatches
                 patches.Add(patch);
             }
 
+
             // Apply all the patches from this variant
             foreach (var patch in patches)
             {
                 // Find the pattern
                 var pattern = PatternToByteArray(patch.Pattern, variant);
-                var matches = IndexOf(pattern);
+                var matches = IndexOf(stream.Item2.GetBuffer(),pattern);
 
                 // Check if there was at least 1 match
                 if (matches.Length < 1)
@@ -206,20 +167,32 @@ namespace QuakePatches
                     if (replacement.Bytes != null)
                         bytes = Convert.FromHexString(DoVariantVariableReplacement(replacement.Bytes, variant).Trim().Replace(" ", ""));
 
-                    _stream.Position = index;
-                    _stream.Write(bytes);
+                    stream.Item2.Position = index;
+                    stream.Item2.Write(bytes);
                 }
             }
 
 
-            _appliedPatches.Add(new AppliedPatch() { Patch = patchFile.Id, Variant = variant.Id });
+            _patchedInfo.AppliedPatches.Add(new AppliedPatch() { Patch = patchFile.Id, Variant = variant.Id });
 
-            // Write json
-            _stream.Position = _markerOffset + PatchMarker.Length + 128 + 128;
+            // Write json into PE section
+            var section = GetQuakePatchesSection(true);
+            var json = JsonSerializer.Serialize(_patchedInfo);
+            section.Contents = new DataSegment(Encoding.UTF8.GetBytes(json));
+        }
 
-            var json = JsonSerializer.Serialize(_appliedPatches.ToArray());
-            _writer.Write((int)json.Length);
-            _writer.Write(json.ToCharArray());
+
+        private PESection GetQuakePatchesSection(bool create=false)
+        {
+            var section = PE.Sections.FirstOrDefault(s => s.Name == PatchSection);
+
+            if (section is null && create) {
+                section = new PESection(PatchSection, SectionFlags.MemoryLocked | SectionFlags.ContentInitializedData);
+                section.Contents = new DataSegment(new byte[] { });
+                PE.Sections.Add(section);
+            }
+
+            return section;
         }
 
         private byte?[] PatternToByteArray(string[] patchPattern, PatchVariant variant)
@@ -270,14 +243,14 @@ namespace QuakePatches
             return newArray;
         }
 
-        private int[] IndexOf(byte[] pattern) => IndexOf(ByteArrayToNullableByteArray(pattern));
-        private int[] IndexOf(byte?[] pattern)
+        private int[] IndexOf(byte[] source, byte[] pattern) => IndexOf(source, ByteArrayToNullableByteArray(pattern));
+        private int[] IndexOf(byte[] source, byte?[] pattern)
         {
-            var arr = Binary;
+            var arr = source;
 
             var startIndex = -1;
             var indexes = new List<int>(1);
-            for (int i = 0, pi = 0; i < arr.Count; i++)
+            for (int i = 0, pi = 0; i < arr.Length; i++)
             {
                 var b = arr[i];
 
@@ -316,14 +289,31 @@ namespace QuakePatches
         public string GetBinaryHash()
         {
             using (var sha512 = SHA512.Create())
-                return Convert.ToHexString(sha512.ComputeHash(Binary.Array));
+                return Convert.ToHexString(sha512.ComputeHash(FullBinary));
+        }
+
+        public void Save(string filePath)
+        {
+            // Write data into sections
+            foreach(var kv in _sectionStreams)
+            {
+                var section = PE.Sections.Single(s => s.Name == kv.Key);
+                var buffer = new DataSegment(kv.Value.Item2.GetBuffer());
+                section.Contents = new VirtualSegment(buffer,kv.Value.Item1.GetVirtualSize());
+            }
+
+            PE.Write(filePath);
         }
 
         public void Dispose()
         {
-            _writer.Dispose();
-            _reader.Dispose();
-            _stream.Dispose();
+            if(_sectionStreams is not null)
+            {
+                foreach(var kv in _sectionStreams)
+                    kv.Value.Item2.Dispose();
+            }
+
+            _originalBinary = null;
         }
     }
 }
