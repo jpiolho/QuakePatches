@@ -500,7 +500,7 @@ class Program
     /// </summary>
     static string GetOwnHash()
     {
-        var processName = Path.GetFileNameWithoutExtension(System.Diagnostics.Process.GetCurrentProcess().ProcessName) + ".exe";
+        var processName = Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().ProcessName);
 
         using (var sha512 = SHA512.Create())
             return Convert.ToHexString(sha512.ComputeHash(File.ReadAllBytes(processName)));
