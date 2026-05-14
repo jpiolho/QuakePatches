@@ -13,12 +13,6 @@ namespace QuakePatches
 {
     class Program
     {
-        private static JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions()
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            ReadCommentHandling = JsonCommentHandling.Skip
-        };
         const string BinaryName = "Quake_x64_steam.exe";
 
         private static List<LoadedPatchFile> _patches;
@@ -456,7 +450,7 @@ namespace QuakePatches
                 Console.WriteLine("Patches folder found");
                 foreach (var file in new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Patches")).GetFiles("*.json"))
                 {
-                    var patch = JsonSerializer.Deserialize<PatchFile>(File.ReadAllText(file.FullName), _jsonSerializerOptions);
+                    var patch = JsonSerializer.Deserialize(File.ReadAllText(file.FullName), AppJsonContext.Default.PatchFile);
 
                     _patches.Add(new LoadedPatchFile()
                     {

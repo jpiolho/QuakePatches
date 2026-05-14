@@ -20,9 +20,5 @@ namespace QuakePatches.Exceptions
         public PatchingException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        protected PatchingException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

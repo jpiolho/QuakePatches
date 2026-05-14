@@ -100,7 +100,7 @@ namespace QuakePatches
             try
             {
                 var json = Encoding.UTF8.GetString(sectionData).Trim((char)0);
-                var patchedBinarySection = JsonSerializer.Deserialize<PatchedBinarySection>(json);
+                var patchedBinarySection = JsonSerializer.Deserialize(json, AppJsonContext.Default.PatchedBinarySection);
 
                 _patchedInfo = patchedBinarySection;
 
@@ -177,7 +177,7 @@ namespace QuakePatches
 
             // Write json into PE section
             var section = GetQuakePatchesSection(true);
-            var json = JsonSerializer.Serialize(_patchedInfo);
+            var json = JsonSerializer.Serialize(_patchedInfo, AppJsonContext.Default.PatchedBinarySection);
             section.Contents = new DataSegment(Encoding.UTF8.GetBytes(json));
         }
 
