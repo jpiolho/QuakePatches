@@ -443,19 +443,34 @@ class Program
 
         // Load patches from the Patches folder
         var patchesFolder = Path.Combine(Environment.CurrentDirectory, "Patches");
+        bool errors = false;
+
         if (Directory.Exists(patchesFolder))
         {
             Console.WriteLine("Patches folder found");
             foreach (var file in new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Patches")).GetFiles("*.json"))
             {
-                var patch = JsonSerializer.Deserialize(File.ReadAllText(file.FullName), AppJsonContext.Default.PatchFile);
+                try {
+                    var patch = JsonSerializer.Deserialize(File.ReadAllText(file.FullName), AppJsonContext.Default.PatchFile);
 
-                _patches.Add(new LoadedPatchFile()
+                    _patches.Add(new LoadedPatchFile()
+                    {
+                        Patch = patch,
+                        SelectedVariant = null
+                    });
+                }
+                catch(Exception ex)
                 {
-                    Patch = patch,
-                    SelectedVariant = null
-                });
+                    Console.Error.WriteLine($"Failed to load patch \"{file.Name}\". Exception: {ex}");
+                    errors = true;
+                }
             }
+        }
+
+        if(errors)
+        {
+            Console.WriteLine("Some patches failed to load. Press any key to continue");
+            Console.ReadKey();
         }
 
         return true;
