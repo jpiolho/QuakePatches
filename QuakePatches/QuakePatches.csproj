@@ -17,8 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AsmResolver.DotNet" Version="4.11.2" />
-    <PackageReference Include="AsmResolver.PE.File" Version="4.11.2" />
+    <PackageReference Include="AsmResolver.DotNet" Version="5.5.1" />
+    <PackageReference Include="AsmResolver.PE.File" Version="5.5.1" />
   </ItemGroup>
 
   <ItemGroup>
