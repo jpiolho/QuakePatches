@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'version-*.*.*'
   workflow_dispatch: {}
 
 permissions:
@@ -26,9 +26,9 @@ jobs:
           - os: windows-latest
             rid: win-x64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -38,7 +38,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5.0.5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -60,7 +60,7 @@ jobs:
         run: |
           Compress-Archive -Path publish/win-x64/QuakePatches.exe,publish/win-x64/Patches -DestinationPath QuakePatches-win-x64.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: QuakePatches-${{ matrix.rid }}
           path: QuakePatches-${{ matrix.rid }}.zip
@@ -72,12 +72,12 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: QuakePatches-*
           merge-multiple: true
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3.0.0
         with:
           draft: true
           tag_name: ${{ github.ref_name }}
