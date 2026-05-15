@@ -1,32 +1,25 @@
 {
   "id": "ui_addonsButtonsFix",
   "name": "Fix overlapping addons buttons",
-  "description": "Fixes the issue that if there's too many addons you're unable to click the buttons in the Addons menu. Pushes the buttons right (out of the list column) and anchors them so they stay put when the list/text scrolls.",
+  "description": "Anchors the addon-page action buttons (Back, Download, Delete, Activate, etc.) to the top-right of the window so they don't overlap the addon list or the description/images, and don't move when those columns scroll.",
   "patches": [
     {
       "id": "patch_button",
       "pattern": [
-        "f3 0f 10 40 14",
-        "f3 0f 5c 40 60",
-        "f3 0f 58 c1",
-        "f3 0f 10 50 10",
-        "f3 0f 5c 50 5c",
-        "f3 0f 58 15 e9 33 52 00",
-        "f3 0f 11 90 d8 00 00 00",
-        "f3 0f 11 80 dc 00 00 00"
+        "f2 0f 59 05 23 32 52 00"
       ],
       "replacements": [
         {
-          "index": 5,
+          "index": 4,
+          "bytes": "fb 30 52 00"
+        },
+        {
+          "index": 31,
           "bytes": "90 90 90 90 90"
         },
         {
-          "index": 19,
-          "bytes": "90 90 90 90 90"
-        },
-        {
-          "index": 28,
-          "bytes": "59 35 52 00"
+          "index": 40,
+          "bytes": "f3 0f 10 50 18 f3 0f 59 15 42 30 52 00 f3 0f 58 50 10"
         }
       ]
     }
