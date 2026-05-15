@@ -1,12 +1,10 @@
 # QuakePatches
 
-A utility that provides easy management of binary patches for Quake Enhanced (2021 re-release).
+A utility that provides easy management & applying of binary patches for Quake Enhanced (2021 re-release).
 
-This tool is made specifically for Quake Enhanced but can be easily adapted to any other binary.
+This tool is originally made for Quake Enhanced, but can be easily adapted to any other binary.
 
 ## How to use
-
-**This tool requires [.NET 6.0 Runtime](https://dotnet.microsoft.com/en-us/download) in order to run.**
 
 1. Extract the tool in any folder
 2. Either copy Quake_x64_steam.exe to the same folder or drag & drop it into the QuakePatches executable
@@ -26,7 +24,10 @@ Yes. QuakePatches uses the backup as a source when applying patches so you don't
 ### **QuakePatches stopped working after an update**
 If the tool doesn't start, make sure to copy the updated executable and delete Quake_x64_steam.exe.original. This will ensure the tool gets a new backup of the newly updated binary.
 
-Also patches are not guaranteed to work across updates. However some might!
+Also note: Patches are not guaranteed to work across updates. However, some might!
+
+### **Can I just reset everything back to how it was?**
+Use steam to verify game integrity. This will re-download the original executable.
 
 ### **How does it know which patches are applied?**
 This info gets appended to the end of the game executable as json.
