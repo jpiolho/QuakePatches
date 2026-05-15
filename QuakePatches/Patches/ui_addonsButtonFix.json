@@ -1,18 +1,32 @@
-﻿{
+{
   "id": "ui_addonsButtonsFix",
   "name": "Fix overlapping addons buttons",
-  "description": "Fixes the issue that if there's too many addons you're unable to click the buttons in the Addons menu",
+  "description": "Fixes the issue that if there's too many addons you're unable to click the buttons in the Addons menu. Pushes the buttons right (out of the list column) and anchors them so they stay put when the list/text scrolls.",
   "patches": [
     {
       "id": "patch_button",
       "pattern": [
-        "c7 45 e8 00 00 a0 41",
-        "f3 0f 11 4d ec"
+        "f3 0f 10 40 14",
+        "f3 0f 5c 40 60",
+        "f3 0f 58 c1",
+        "f3 0f 10 50 10",
+        "f3 0f 5c 50 5c",
+        "f3 0f 58 15 e9 33 52 00",
+        "f3 0f 11 90 d8 00 00 00",
+        "f3 0f 11 80 dc 00 00 00"
       ],
       "replacements": [
         {
-          "index": 3,
-          "bytes": "00 00 be 43"
+          "index": 5,
+          "bytes": "90 90 90 90 90"
+        },
+        {
+          "index": 19,
+          "bytes": "90 90 90 90 90"
+        },
+        {
+          "index": 28,
+          "bytes": "59 35 52 00"
         }
       ]
     }

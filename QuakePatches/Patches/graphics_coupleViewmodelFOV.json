@@ -6,7 +6,7 @@
     {
       "id": "patch_jump_1",
       "pattern": [
-        "80 bd 88 02 00 00 00",
+        "80 bd 70 01 00 00 00",
         "75 2f"
       ],
       "replacements": [
@@ -19,41 +19,39 @@
     {
       "id": "patch_jump_2",
       "pattern": [
-        "80 bd c8 02 00 00 00",
-        "75 2f",
-        "48 63 47 18"
+        "40 84 ff",
+        "0f 85 c6 00 00 00"
       ],
       "replacements": [
         {
-          "index": 7,
-          "bytes": "EB"
+          "index": 3,
+          "bytes": "E9 C7 00 00 00 90"
         }
       ]
     },
     {
       "id": "patch_jump_3",
       "pattern": [
-        "80 bd d8 03 00 00 00",
-        "75 2f",
-        "49 63 47 1c"
+        "80 bd c0 02 00 00 00",
+        "0f 85 ca 00 00 00"
       ],
       "replacements": [
         {
           "index": 7,
-          "bytes": "EB"
+          "bytes": "E9 CB 00 00 00 90"
         }
       ]
     },
     {
       "id": "patch_jump_4",
       "pattern": [
-        "48 3b fb",
-        "0f 85 88 00 00 00"
+        "80 bd f0 02 00 00 00",
+        "0f 85 c8 00 00 00"
       ],
       "replacements": [
         {
-          "index": 3,
-          "bytes": "E9 89 00 00 00 90"
+          "index": 7,
+          "bytes": "E9 C9 00 00 00 90"
         }
       ]
     }
