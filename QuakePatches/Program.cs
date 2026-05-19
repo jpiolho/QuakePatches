@@ -496,14 +496,14 @@ class Program
     }
 
     /// <summary>
-    /// Returns the SHA512 hash of the QuakePatches program .exe
+    /// Returns the SHA512 hash of the QuakePatches program
     /// </summary>
     static string GetOwnHash()
     {
-        var processName = Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().ProcessName);
-
+        var exePath = Environment.ProcessPath ?? throw new InvalidOperationException("Could not determine executable path.");
+        
         using (var sha512 = SHA512.Create())
-            return Convert.ToHexString(sha512.ComputeHash(File.ReadAllBytes(processName)));
+            return Convert.ToHexString(sha512.ComputeHash(File.ReadAllBytes(exePath)));
     }
 
 }
