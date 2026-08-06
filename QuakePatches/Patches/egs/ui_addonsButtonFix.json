@@ -1,0 +1,34 @@
+{
+  "id": "ui_addonsButtonsFix",
+  "name": "Fix overlapping addons buttons",
+  "description": "Anchors the addon-page action buttons (Back, Download, Delete, Activate, etc.) to the top-right of the window so they don't overlap the addon list or the description/images, and don't move when those columns scroll.",
+  "patches": [
+    {
+      "id": "patch_button",
+      "pattern": [
+        "f2 0f 59 05 61 44 39 00"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "31 43 39 00"
+        },
+        {
+          "index": 31,
+          "bytes": "90 90 90 90 90"
+        },
+        {
+          "index": 40,
+          "bytes": "f3 0f 10 50 18 f3 0f 59 15 78 42 39 00 f3 0f 58 50 10"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_button" ]
+    }
+  ]
+}

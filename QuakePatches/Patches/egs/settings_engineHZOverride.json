@@ -1,0 +1,37 @@
+﻿{
+  "id": "settings_engineHZOverride",
+  "name": "cl_engineHZ override",
+  "description": "Allows a much bigger range on the cvar (1 - 9999)",
+  "patches": [
+    {
+      "id": "patch_cvar",
+      "pattern": [
+        "f3 0f 10 05 32 05 74 00",
+        "f3 0f 11 44 24 30",
+        "f3 0f 10 0d 60 04 74 00",
+        "f3 0f 11 4c 24 28"
+      ],
+      "replacements": [
+        {
+          "index": 0,
+          "bytes": "c7 44 24 30 00 3c 1c 46" // float: 9999
+        },
+        {
+          "index": 8,
+          "bytes": "c7 44 24 28 00 00 80 3f" // float: 1
+        },
+        {
+          "index": 16,
+          "bytes": "90 90 90 90 90 90 90 90 90 90 90 90" // nopes
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default",
+      "name": "Default",
+      "patches": [ "patch_cvar" ]
+    }
+  ]
+}
