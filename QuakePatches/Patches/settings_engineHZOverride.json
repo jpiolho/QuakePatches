@@ -6,9 +6,9 @@
     {
       "id": "patch_cvar",
       "pattern": [
-        "f3 0f 10 05 ca b1 8c 00",
+        "f3 0f 10 05 32 b2 74 00",
         "f3 0f 11 44 24 30",
-        "f3 0f 10 0d f8 b0 8c 00",
+        "f3 0f 10 0d 60 b1 74 00",
         "f3 0f 11 4c 24 28"
       ],
       "replacements": [
