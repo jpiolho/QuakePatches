@@ -1,7 +1,7 @@
-{
+﻿{
   "id": "game_moreBots",
   "name": "More bots",
-  "description": "Allows up to 16 bots",
+  "description": "Allows up to 15, 31, 63 or 127 bots. Please note that higher bot max can make them worse [!Patch developed using LLM!]",
   "patches": [
     {
       // qxGameSettings::Apply - Remove bot_numBots cap
@@ -20,7 +20,7 @@
       "replacements": [
         {
           "index": 23,
-          "bytes": "%cnt%"
+          "bytes": "%cap%"
         }
       ]
     },
@@ -38,11 +38,11 @@
       "replacements": [
         {
           "index": 7,
-          "bytes": "%cnt%"
+          "bytes": "%cap%"
         },
         {
           "index": 13,
-          "bytes": "%cnt%"
+          "bytes": "%cap%"
         }
       ]
     },
@@ -64,7 +64,54 @@
       "replacements": [
         {
           "index": 4,
-          "bytes": "%cnt%"
+          "bytes": "%cap%"
+        }
+      ]
+    },
+    {
+      // qxGameSettings::Apply - Make the emitted "maxplayers N" cover the bots.
+      // Apply sends `maxplayers <settings+0x54>`, which is the $m_max_players
+      // slider and is capped at 8 (16 with lobby_maxplayers16). svs.maxclients
+      // follows it, so AddBot runs out of client slots long before %cap%.
+      // Rewritten in place, no length change, to send maxPlayers + bot_numBots
+      // (bot_numBots is already clamped to %cap% - cl_localplayers just above):
+      //   MOV  [RBP-0x59],EAX     -> ADD EAX,[RBX+0x50]   add bot_numBots
+      //   MOVAPS XMM0,[RBP-0x59]  -> MOV [RBP-0x49],EAX   store the format arg
+      //   MOVDQA [RBP-0x49],XMM0  -> NOPs                 staging copy is gone
+      // [RBP-0x59] is only staging for that copy (it is overwritten with the
+      // format-string pointer right after), and XMM0 is reloaded before its
+      // next use, so both are dead here.
+      // Touches no byte of lobby_maxplayers16 - that patch edits the
+      // $m_max_players slider cap in FUN_1403ac310 and the co-op `mov edi,4`
+      // at the top of Apply, both well clear of this window.
+      "id": "patch_apply_maxplayers",
+      "pattern": [
+        "8b 43 54",                 // MOV EAX, [RBX+0x54]        settings.maxPlayers
+        "4c 8d 45 a7",              // LEA R8, [RBP-0x59]
+        "89 45 a7",                 // MOV [RBP-0x59], EAX
+        "48 8d 55 f7",              // LEA RDX, [RBP-0x9]
+        "0f 28 45 a7",              // MOVAPS XMM0, [RBP-0x59]
+        "48 8d 05 ** ** ** **",     // LEA RAX, [maxplayers format string]
+        "48 89 45 a7",              // MOV [RBP-0x59], RAX
+        "48 8b 45 2f",
+        "48 89 45 ef",
+        "48 8d 45 b7",              // LEA RAX, [RBP-0x49]
+        "0f 10 4d e7",
+        "48 c7 45 af 0e 00 00 00",
+        "66 0f 7f 45 b7"            // MOVDQA [RBP-0x49], XMM0
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "03 43 50"
+        },
+        {
+          "index": 14,
+          "bytes": "89 45 B7 90"
+        },
+        {
+          "index": 53,
+          "bytes": "90 90 90 90 90"
         }
       ]
     },
@@ -766,15 +813,15 @@
       "replacements": [
         {
           "index": 3,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 60,
-          "bytes": "10000000"
+          "bytes": "%cnt32%"
         },
         {
           "index": 70,
-          "bytes": "98010200"
+          "bytes": "%resv%"
         }
       ]
     },
@@ -788,15 +835,15 @@
       "replacements": [
         {
           "index": 3,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 82,
-          "bytes": "10000000"
+          "bytes": "%cnt32%"
         },
         {
           "index": 92,
-          "bytes": "98010200"
+          "bytes": "%resv%"
         }
       ]
     },
@@ -810,47 +857,47 @@
       "replacements": [
         {
           "index": 3,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 82,
-          "bytes": "28300200"
+          "bytes": "%t18%"
         },
         {
           "index": 167,
-          "bytes": "10"
+          "bytes": "%cnt%"
         },
         {
           "index": 187,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 210,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 224,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 248,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 264,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 275,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 304,
-          "bytes": "10000000"
+          "bytes": "%cnt32%"
         },
         {
           "index": 311,
-          "bytes": "98010200"
+          "bytes": "%resv%"
         }
       ]
     },
@@ -864,15 +911,15 @@
       "replacements": [
         {
           "index": 2,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 16,
-          "bytes": "2C300200"
+          "bytes": "%t1C%"
         },
         {
           "index": 186,
-          "bytes": "10"
+          "bytes": "%cnt%"
         }
       ]
     },
@@ -886,59 +933,59 @@
       "replacements": [
         {
           "index": 2,
-          "bytes": "0F"
+          "bytes": "%cntm1%"
         },
         {
           "index": 81,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 102,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 152,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 173,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 459,
-          "bytes": "28300200"
+          "bytes": "%t18%"
         },
         {
           "index": 467,
-          "bytes": "2C300200"
+          "bytes": "%t1C%"
         },
         {
           "index": 477,
-          "bytes": "30300200"
+          "bytes": "%t20%"
         },
         {
           "index": 487,
-          "bytes": "34300200"
+          "bytes": "%t24%"
         },
         {
           "index": 497,
-          "bytes": "38300200"
+          "bytes": "%t28%"
         },
         {
           "index": 511,
-          "bytes": "3C300200"
+          "bytes": "%t2C%"
         },
         {
           "index": 520,
-          "bytes": "40300200"
+          "bytes": "%t30%"
         },
         {
           "index": 530,
-          "bytes": "44300200"
+          "bytes": "%t34%"
         },
         {
           "index": 538,
-          "bytes": "48300200"
+          "bytes": "%t38%"
         }
       ]
     },
@@ -952,111 +999,111 @@
       "replacements": [
         {
           "index": 3,
-          "bytes": "28300200"
+          "bytes": "%t18%"
         },
         {
           "index": 118,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 145,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 231,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 250,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 380,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 440,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 500,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 534,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 594,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 628,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 673,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 684,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 696,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 730,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 740,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 774,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 784,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 818,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 828,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 862,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 946,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 980,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 1054,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 1074,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 1125,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 1251,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         }
       ]
     },
@@ -1070,39 +1117,39 @@
       "replacements": [
         {
           "index": 4,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 26,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 183,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 656,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 686,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 818,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 921,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 2425,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 3513,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         }
       ]
     },
@@ -1116,19 +1163,19 @@
       "replacements": [
         {
           "index": 4,
-          "bytes": "20000200"
+          "bytes": "%e10%"
         },
         {
           "index": 14,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 21,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 29,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         }
       ]
     },
@@ -1142,23 +1189,23 @@
       "replacements": [
         {
           "index": 2,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 10,
-          "bytes": "1C300200"
+          "bytes": "%t0C%"
         },
         {
           "index": 17,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 51,
-          "bytes": "10000000"
+          "bytes": "%cnt32%"
         },
         {
           "index": 99,
-          "bytes": "28300200"
+          "bytes": "%t18%"
         }
       ]
     },
@@ -1172,11 +1219,11 @@
       "replacements": [
         {
           "index": 3,
-          "bytes": "18000200"
+          "bytes": "%e08%"
         },
         {
           "index": 96,
-          "bytes": "10"
+          "bytes": "%cnt%"
         }
       ]
     },
@@ -1190,38 +1237,50 @@
       "replacements": [
         {
           "index": 1,
-          "bytes": "68320200"
+          "bytes": "%talloc%"
         },
         {
           "index": 70,
-          "bytes": "10000200"
+          "bytes": "%e00%"
         },
         {
           "index": 112,
-          "bytes": "10300200"
+          "bytes": "%t00%"
         },
         {
           "index": 119,
-          "bytes": "18300200"
+          "bytes": "%t08%"
         },
         {
           "index": 125,
-          "bytes": "20300200"
+          "bytes": "%t10%"
         },
         {
           "index": 137,
-          "bytes": "30300200"
+          "bytes": "%t20%"
         }
       ]
     }
     // ---- END generated ----
   ],
   "variants": [
+    // Variable derivation (n = bot count):
+    //   cnt/cntm1/cnt32 = n as imm8 / n-1 as imm8 / n as imm32. n must stay <= 0x7F:
+    //                     the bot-array bounds are sign-extended `cmp r/m, imm8` forms.
+    //   qxBotManager   (element 0xB0, array at +8):
+    //     alloc = 0x20 + n*0xB0    d588 = 0x08 + n*0xB0    d590 = 0x10 + n*0xB0
+    //     d594  = 0x14 + n*0xB0    d598 = 0x18 + n*0xB0
+    //   qxBotTraceManager (LOS cache [n][512] of 16 bytes at +0x10, then 512 entity
+    //   slots of 0x18 whose first n are reserved for the bots themselves):
+    //     ent    = 0x10 + n*0x2000                e00/e08/e10 = ent + 0/8/0x10
+    //     resv   = ent + n*0x18 + 8               post   = ent + 0x3000
+    //     tXX    = post + 0xXX                    talloc = post + 0x258
     {
       "id": "bots16",
-      "name": "16 bots",
+      "name": "16 max players (15 bots)",
       "patches": [
         "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
         "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
         "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
         "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
@@ -1239,6 +1298,18 @@
         {
           "variable": "cnt",
           "value": "10"
+        },
+        {
+          "variable": "cap",
+          "value": "10"
+        },
+        {
+          "variable": "cntm1",
+          "value": "0F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "10000000"
         },
         {
           "variable": "alloc",
@@ -1259,6 +1330,468 @@
         {
           "variable": "d598",
           "value": "180B0000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000200"
+        },
+        {
+          "variable": "e08",
+          "value": "18000200"
+        },
+        {
+          "variable": "e10",
+          "value": "20000200"
+        },
+        {
+          "variable": "resv",
+          "value": "98010200"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320200"
+        },
+        {
+          "variable": "t00",
+          "value": "10300200"
+        },
+        {
+          "variable": "t08",
+          "value": "18300200"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300200"
+        },
+        {
+          "variable": "t10",
+          "value": "20300200"
+        },
+        {
+          "variable": "t18",
+          "value": "28300200"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300200"
+        },
+        {
+          "variable": "t20",
+          "value": "30300200"
+        },
+        {
+          "variable": "t24",
+          "value": "34300200"
+        },
+        {
+          "variable": "t28",
+          "value": "38300200"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300200"
+        },
+        {
+          "variable": "t30",
+          "value": "40300200"
+        },
+        {
+          "variable": "t34",
+          "value": "44300200"
+        },
+        {
+          "variable": "t38",
+          "value": "48300200"
+        }
+      ]
+    },
+    {
+      "id": "bots32",
+      "name": "32 max players (31 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "20"
+        },
+        {
+          "variable": "cap",
+          "value": "20"
+        },
+        {
+          "variable": "cntm1",
+          "value": "1F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "20000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "20160000"
+        },
+        {
+          "variable": "d588",
+          "value": "08160000"
+        },
+        {
+          "variable": "d590",
+          "value": "10160000"
+        },
+        {
+          "variable": "d594",
+          "value": "14160000"
+        },
+        {
+          "variable": "d598",
+          "value": "18160000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000400"
+        },
+        {
+          "variable": "e08",
+          "value": "18000400"
+        },
+        {
+          "variable": "e10",
+          "value": "20000400"
+        },
+        {
+          "variable": "resv",
+          "value": "18030400"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320400"
+        },
+        {
+          "variable": "t00",
+          "value": "10300400"
+        },
+        {
+          "variable": "t08",
+          "value": "18300400"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300400"
+        },
+        {
+          "variable": "t10",
+          "value": "20300400"
+        },
+        {
+          "variable": "t18",
+          "value": "28300400"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300400"
+        },
+        {
+          "variable": "t20",
+          "value": "30300400"
+        },
+        {
+          "variable": "t24",
+          "value": "34300400"
+        },
+        {
+          "variable": "t28",
+          "value": "38300400"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300400"
+        },
+        {
+          "variable": "t30",
+          "value": "40300400"
+        },
+        {
+          "variable": "t34",
+          "value": "44300400"
+        },
+        {
+          "variable": "t38",
+          "value": "48300400"
+        }
+      ]
+    },
+    {
+      "id": "bots64",
+      "name": "64 max players (63 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "40"
+        },
+        {
+          "variable": "cap",
+          "value": "40"
+        },
+        {
+          "variable": "cntm1",
+          "value": "3F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "40000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "202C0000"
+        },
+        {
+          "variable": "d588",
+          "value": "082C0000"
+        },
+        {
+          "variable": "d590",
+          "value": "102C0000"
+        },
+        {
+          "variable": "d594",
+          "value": "142C0000"
+        },
+        {
+          "variable": "d598",
+          "value": "182C0000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000800"
+        },
+        {
+          "variable": "e08",
+          "value": "18000800"
+        },
+        {
+          "variable": "e10",
+          "value": "20000800"
+        },
+        {
+          "variable": "resv",
+          "value": "18060800"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320800"
+        },
+        {
+          "variable": "t00",
+          "value": "10300800"
+        },
+        {
+          "variable": "t08",
+          "value": "18300800"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300800"
+        },
+        {
+          "variable": "t10",
+          "value": "20300800"
+        },
+        {
+          "variable": "t18",
+          "value": "28300800"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300800"
+        },
+        {
+          "variable": "t20",
+          "value": "30300800"
+        },
+        {
+          "variable": "t24",
+          "value": "34300800"
+        },
+        {
+          "variable": "t28",
+          "value": "38300800"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300800"
+        },
+        {
+          "variable": "t30",
+          "value": "40300800"
+        },
+        {
+          "variable": "t34",
+          "value": "44300800"
+        },
+        {
+          "variable": "t38",
+          "value": "48300800"
+        }
+      ]
+    },
+    {
+      "id": "bots128",
+      "name": "128 max players (127 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "7F"
+        },
+        {
+          "variable": "cap",
+          "value": "80"
+        },
+        {
+          "variable": "cntm1",
+          "value": "7E"
+        },
+        {
+          "variable": "cnt32",
+          "value": "7F000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "70570000"
+        },
+        {
+          "variable": "d588",
+          "value": "58570000"
+        },
+        {
+          "variable": "d590",
+          "value": "60570000"
+        },
+        {
+          "variable": "d594",
+          "value": "64570000"
+        },
+        {
+          "variable": "d598",
+          "value": "68570000"
+        },
+        {
+          "variable": "e00",
+          "value": "10E00F00"
+        },
+        {
+          "variable": "e08",
+          "value": "18E00F00"
+        },
+        {
+          "variable": "e10",
+          "value": "20E00F00"
+        },
+        {
+          "variable": "resv",
+          "value": "00EC0F00"
+        },
+        {
+          "variable": "talloc",
+          "value": "68121000"
+        },
+        {
+          "variable": "t00",
+          "value": "10101000"
+        },
+        {
+          "variable": "t08",
+          "value": "18101000"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C101000"
+        },
+        {
+          "variable": "t10",
+          "value": "20101000"
+        },
+        {
+          "variable": "t18",
+          "value": "28101000"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C101000"
+        },
+        {
+          "variable": "t20",
+          "value": "30101000"
+        },
+        {
+          "variable": "t24",
+          "value": "34101000"
+        },
+        {
+          "variable": "t28",
+          "value": "38101000"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C101000"
+        },
+        {
+          "variable": "t30",
+          "value": "40101000"
+        },
+        {
+          "variable": "t34",
+          "value": "44101000"
+        },
+        {
+          "variable": "t38",
+          "value": "48101000"
         }
       ]
     }
