@@ -1231,7 +1231,7 @@
       // qxBotTraceManager ctor - Grow allocation, relocate post-cache fields
       "id": "patch_trace_alloc",
       "pattern": [
-        "b9 68 32 01 00 e8 ec 86 31 00 48 8b f8 48 89 45",
+        "b9 68 32 01 00 e8 ** ** ** ** 48 8b f8 48 89 45",
         "67 c7 00 ff ff ff ff 44 89 78 04 c7 40 08 ff ff"
       ],
       "replacements": [
