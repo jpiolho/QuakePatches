@@ -6,12 +6,12 @@
     {
       "id": "patch_button",
       "pattern": [
-        "f2 0f 59 05 81 2f 39 00"
+        "f2 0f 59 05 e1 32 39 00"
       ],
       "replacements": [
         {
           "index": 4,
-          "bytes": "51 2e 39 00"
+          "bytes": "b1 31 39 00"
         },
         {
           "index": 31,
@@ -19,7 +19,7 @@
         },
         {
           "index": 40,
-          "bytes": "f3 0f 10 50 18 f3 0f 59 15 98 2d 39 00 f3 0f 58 50 10"
+          "bytes": "f3 0f 10 50 18 f3 0f 59 15 f8 30 39 00 f3 0f 58 50 10"
         }
       ]
     }

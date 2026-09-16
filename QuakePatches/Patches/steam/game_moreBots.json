@@ -1,0 +1,1799 @@
+﻿{
+  "id": "game_moreBots",
+  "name": "More bots",
+  "description": "Allows up to 15, 31, 63 or 127 bots. Please note that higher bot max can make them worse [!Patch developed using LLM!]",
+  "patches": [
+    {
+      // qxGameSettings::Apply - Remove bot_numBots cap
+      "id": "patch_clamp_lobby",
+      "pattern": [
+        "83 f8 05",
+        "77 11",
+        "41 8b 8c 84 ** ** ** **",
+        "49 03 cc",
+        "ff e1",
+        "8b fe",
+        "eb 05",
+        "bf 08 00 00 00",
+        "44 8b 43 48"
+      ],
+      "replacements": [
+        {
+          "index": 23,
+          "bytes": "%cap%"
+        }
+      ]
+    },
+    {
+      // Match settings bot slider - Raise max slots per game mode
+      "id": "patch_slider_numbots",
+      "pattern": [
+        "b8 01 00 00 00",
+        "c3",
+        "b8 04 00 00 00",
+        "c3",
+        "b8 08 00 00 00",
+        "c3"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "%cap%"
+        },
+        {
+          "index": 13,
+          "bytes": "%cap%"
+        }
+      ]
+    },
+    {
+      // Match settings min players slider - Raise the online lobby cap
+      "id": "patch_slider_minplayers",
+      "pattern": [
+        "8b 47 64",
+        "b9 08 00 00 00",
+        "3b c1",
+        "0f 4f c1",
+        "40 88 74 24 48",
+        "c6 44 24 40 01",
+        "c6 44 24 38 01",
+        "89 44 24 20",
+        "41 b9 01 00 00 00",
+        "4c 8d 47 5c"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "%cap%"
+        }
+      ]
+    },
+    {
+      // qxGameSettings::Apply - Make the emitted "maxplayers N" cover the bots.
+      // Apply sends `maxplayers <settings+0x54>`, which is the $m_max_players
+      // slider and is capped at 8 (16 with lobby_maxplayers16). svs.maxclients
+      // follows it, so AddBot runs out of client slots long before %cap%.
+      // Rewritten in place, no length change, to send maxPlayers + bot_numBots
+      // (bot_numBots is already clamped to %cap% - cl_localplayers just above):
+      //   MOV  [RBP-0x59],EAX     -> ADD EAX,[RBX+0x50]   add bot_numBots
+      //   MOVAPS XMM0,[RBP-0x59]  -> MOV [RBP-0x49],EAX   store the format arg
+      //   MOVDQA [RBP-0x49],XMM0  -> NOPs                 staging copy is gone
+      // [RBP-0x59] is only staging for that copy (it is overwritten with the
+      // format-string pointer right after), and XMM0 is reloaded before its
+      // next use, so both are dead here.
+      // Touches no byte of lobby_maxplayers16 - that patch edits the
+      // $m_max_players slider cap in FUN_1403ac310 and the co-op `mov edi,4`
+      // at the top of Apply, both well clear of this window.
+      "id": "patch_apply_maxplayers",
+      "pattern": [
+        "8b 43 54",                 // MOV EAX, [RBX+0x54]        settings.maxPlayers
+        "4c 8d 45 a7",              // LEA R8, [RBP-0x59]
+        "89 45 a7",                 // MOV [RBP-0x59], EAX
+        "48 8d 55 f7",              // LEA RDX, [RBP-0x9]
+        "0f 28 45 a7",              // MOVAPS XMM0, [RBP-0x59]
+        "48 8d 05 ** ** ** **",     // LEA RAX, [maxplayers format string]
+        "48 89 45 a7",              // MOV [RBP-0x59], RAX
+        "48 8b 45 2f",
+        "48 89 45 ef",
+        "48 8d 45 b7",              // LEA RAX, [RBP-0x49]
+        "0f 10 4d e7",
+        "48 c7 45 af 0e 00 00 00",
+        "66 0f 7f 45 b7"            // MOVDQA [RBP-0x49], XMM0
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "03 43 50"
+        },
+        {
+          "index": 14,
+          "bytes": "89 45 B7 90"
+        },
+        {
+          "index": 53,
+          "bytes": "90 90 90 90 90"
+        }
+      ]
+    },
+    {
+      // qxBotManager ctor - Grow bot array, relocate botCharacters fields
+      "id": "patch_mgr_alloc_and_fields",
+      "pattern": [
+        "b9 a0 05 00 00",
+        "e8 ** ** ** **",
+        "48 8b d8",
+        "48 89 45 67",
+        "45 33 ff",
+        "44 89 38",
+        "48 8d 78 08",
+        "48 8d 05 ** ** ** **",
+        "48 89 44 24 20",
+        "4c 8d 0d ** ** ** **",
+        "ba b0 00 00 00",
+        "41 b8 08 00 00 00",
+        "48 8b cf",
+        "e8 ** ** ** **",
+        "4c 89 bb 88 05 00 00",
+        "4c 89 bb 90 05 00 00",
+        "be 40 00 00 00",
+        "89 b3 98 05 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 1,
+          "bytes": "%alloc%"
+        },
+        {
+          "index": 53,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 68,
+          "bytes": "%d588%"
+        },
+        {
+          "index": 75,
+          "bytes": "%d590%"
+        },
+        {
+          "index": 86,
+          "bytes": "%d598%"
+        }
+      ]
+    },
+    {
+      // qxBotManager ctor - Replace unrolled bot index init with a loop
+      "id": "patch_mgr_index_init",
+      "pattern": [
+        "48 85 ff",
+        "74 03",
+        "44 89 3f",
+        "48 8d 87 b0 00 00 00",
+        "48 85 c0",
+        "74 06",
+        "c7 00 01 00 00 00",
+        "48 8d 87 60 01 00 00",
+        "48 85 c0",
+        "74 06",
+        "c7 00 02 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 0,
+          "bytes": "31 C0 89 07 FF C0 48 81 C7 B0 00 00 00 83 F8 %cnt% 7C F0 41 BE 06 00 00 00 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090 90909090909090909090"
+        }
+      ]
+    },
+    {
+      // qxBotManager ctor - Grow the bot think/input job array reserve
+      "id": "patch_mgr_job_reserve",
+      "pattern": [
+        "48 83 ee 01",
+        "75 cd",
+        "48 89 3d ** ** ** **",
+        "83 3d ** ** ** ** 08",
+        "73 11",
+        "ba 08 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 19,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 23,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::LoadBotCharacters - Relocated botCharacters fields
+      "id": "patch_chars_load",
+      "pattern": [
+        "44 39 bb 94 05 00 00",
+        "76 07",
+        "44 89 bb 94 05 00 00",
+        "4c 8d ab 88 05 00 00",
+        "41 81 7d 08 c0 00 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 12,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 19,
+          "bytes": "%d588%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::LoadBotCharacters - Relocated botCharacters count
+      "id": "patch_chars_load_count",
+      "pattern": [
+        "48 8d 54 24 50",
+        "4c 89 7c 24 30",
+        "48 8d 4d 90",
+        "8b 80 94 05 00 00",
+        "89 44 24 70"
+      ],
+      "replacements": [
+        {
+          "index": 16,
+          "bytes": "%d594%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::PickRandomCharacter - Relocated botCharacters count
+      "id": "patch_chars_pick_head",
+      "pattern": [
+        "48 81 ec d0 00 00 00",
+        "4c 8b f1",
+        "8b b1 94 05 00 00",
+        "45 33 ed",
+        "85 f6"
+      ],
+      "replacements": [
+        {
+          "index": 12,
+          "bytes": "%d594%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::PickRandomCharacter - Relocated botCharacters fields
+      "id": "patch_chars_pick_a",
+      "pattern": [
+        "41 3b 9e 94 05 00 00",
+        "72 19",
+        "41 b8 d3 02 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "4c 6b f3 44",
+        "48 8b 45 67",
+        "4c 03 b0 88 05 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 45,
+          "bytes": "%d588%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::PickRandomCharacter - Relocated botCharacters fields
+      "id": "patch_chars_pick_b",
+      "pattern": [
+        "44 8b ea",
+        "48 8b 5d 67",
+        "44 3b ab 94 05 00 00",
+        "72 19",
+        "41 b8 d3 02 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "41 8b c5",
+        "4c 6b f0 44",
+        "4c 03 b3 88 05 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 10,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 51,
+          "bytes": "%d588%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::FindCharacterByName - Relocated botCharacters count
+      "id": "patch_chars_find_head",
+      "pattern": [
+        "48 81 ec d0 00 00 00",
+        "44 8b b1 94 05 00 00",
+        "45 33 ff",
+        "4c 8b e2",
+        "48 8b f9",
+        "45 85 f6"
+      ],
+      "replacements": [
+        {
+          "index": 10,
+          "bytes": "%d594%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::FindCharacterByName - Relocated botCharacters fields
+      "id": "patch_chars_find_a",
+      "pattern": [
+        "41 8b df",
+        "45 85 f6",
+        "7e **",
+        "3b 9f 94 05 00 00",
+        "72 19",
+        "41 b8 d3 02 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "8b c3",
+        "49 8b cc",
+        "48 6b f0 44",
+        "48 03 b7 88 05 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 10,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 53,
+          "bytes": "%d588%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::FindCharacterByName - Relocated botCharacters fields
+      "id": "patch_chars_find_b",
+      "pattern": [
+        "48 c7 45 9f 03 00 00 00",
+        "48 89 45 97",
+        "3b 9f 94 05 00 00",
+        "72 19",
+        "41 b8 d3 02 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "8b c3",
+        "4c 8d 4d a7",
+        "48 6b c8 44",
+        "48 8b 87 88 05 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 14,
+          "bytes": "%d594%"
+        },
+        {
+          "index": 58,
+          "bytes": "%d588%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_1c1f10",
+      "pattern": [
+        "48 85 db",
+        "74 4d",
+        "4c 39 3d ** ** ** **",
+        "74 44",
+        "48 83 c3 08",
+        "41 8b ff",
+        "41 83 ff 08"
+      ],
+      "replacements": [
+        {
+          "index": 24,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 79,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_1c22a0",
+      "pattern": [
+        "44 38 7e 05",
+        "74 44",
+        "48 83 c3 08",
+        "41 8b ff",
+        "41 83 ff 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 16,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 71,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // Bot event dispatch - Bot array bound and loop count
+      "id": "patch_bound_21b730",
+      "pattern": [
+        "48 83 c3 40",
+        "41 bd 08 00 00 00",
+        "48 89 5c 24 20",
+        "90",
+        "48 83 fd 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 6,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 19,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_21c4d0",
+      "pattern": [
+        "48 8b ee",
+        "41 be 08 00 00 00",
+        "0f 57 f6",
+        "41 0f 94 c4",
+        "0f 1f 00",
+        "48 8b 1d ** ** ** **",
+        "48 83 fe 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 5,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 29,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_21f1d0",
+      "pattern": [
+        "49 8b ee",
+        "41 bf 08 00 00 00",
+        "0f 57 f6",
+        "0f 1f 00",
+        "48 8b 3d ** ** ** **",
+        "49 83 fe 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 5,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 25,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_2203a0_a",
+      "pattern": [
+        "45 33 f6",
+        "4c 89 75 d0",
+        "90",
+        "48 8b 1d ** ** ** **",
+        "48 83 f8 08",
+        "72 24",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 18,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_2203a0_b",
+      "pattern": [
+        "48 ff c0",
+        "48 89 44 24 60",
+        "49 81 c6 b0 00 00 00",
+        "4c 89 75 d0",
+        "83 f9 08",
+        "0f 8c ** ** ** **"
+      ],
+      "replacements": [
+        {
+          "index": 21,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_2203a0_c",
+      "pattern": [
+        "33 ff",
+        "45 33 e4",
+        "45 33 ed",
+        "48 8b 1d ** ** ** **",
+        "49 83 fc 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 18,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_2203a0_d",
+      "pattern": [
+        "41 ff c7",
+        "49 ff c4",
+        "49 81 c5 b0 00 00 00",
+        "41 83 ff 08",
+        "0f 8c ** ** ** **"
+      ],
+      "replacements": [
+        {
+          "index": 16,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_221640_a",
+      "pattern": [
+        "0f 57 f6",
+        "0f 1f 40 00",
+        "48 8b 35 ** ** ** **",
+        "48 83 fb 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 17,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_221640_b",
+      "pattern": [
+        "41 ff c6",
+        "48 ff c3",
+        "48 81 c7 b0 00 00 00",
+        "41 83 fe 08",
+        "0f 8c ** ** ** **"
+      ],
+      "replacements": [
+        {
+          "index": 16,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_223220_a",
+      "pattern": [
+        "0f 57 f6",
+        "0f 1f 40 00",
+        "4c 8b 35 ** ** ** **",
+        "48 83 fb 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 17,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      "id": "patch_bound_223220_b",
+      "pattern": [
+        "41 ff c4",
+        "48 ff c3",
+        "48 81 c7 b0 00 00 00",
+        "41 83 fc 08",
+        "0f 8c ** ** ** **"
+      ],
+      "replacements": [
+        {
+          "index": 16,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::Reset - Bot array loop count and bound
+      "id": "patch_bound_224210",
+      "pattern": [
+        "48 8d 59 08",
+        "89 39",
+        "be 08 00 00 00",
+        "0f 1f 40 00",
+        "48 83 ff 08",
+        "72 19",
+        "41 b8 09 06 00 00"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 18,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::AddBot - Free bot slot search bound
+      "id": "patch_bound_addbot",
+      "pattern": [
+        "8b c5",
+        "49 8d 76 08",
+        "83 7e 08 ff",
+        "74 46",
+        "ff c0",
+        "48 81 c6 b0 00 00 00",
+        "83 f8 08",
+        "7c ec"
+      ],
+      "replacements": [
+        {
+          "index": 23,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::KickBot - Bot slot search bound
+      "id": "patch_bound_kickbot",
+      "pattern": [
+        "48 89 6c 24 30",
+        "83 fe 08",
+        "48 8d 69 08",
+        "72 19",
+        "41 b8 09 06 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "8b 45 08",
+        "83 f8 ff",
+        "74 04",
+        "3b c3",
+        "74 37",
+        "ff c6",
+        "48 81 c5 b0 00 00 00",
+        "83 fe 08",
+        "7c cb"
+      ],
+      "replacements": [
+        {
+          "index": 7,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 62,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotManager::FindBotByClientNum - Bot slot search bound
+      "id": "patch_bound_findbot",
+      "pattern": [
+        "48 8d 79 08",
+        "83 fb 08",
+        "8b f2",
+        "72 19",
+        "41 b8 09 06 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "8b 47 08",
+        "83 f8 ff",
+        "74 04",
+        "3b c6",
+        "74 20",
+        "ff c3",
+        "48 81 c7 b0 00 00 00",
+        "83 fb 08",
+        "7c cb"
+      ],
+      "replacements": [
+        {
+          "index": 6,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 59,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // Bot debug display - Bot array bound
+      "id": "patch_bound_227040_a",
+      "pattern": [
+        "49 8b fc",
+        "49 8d 77 08",
+        "48 8b de",
+        "49 83 fc 08",
+        "72 19",
+        "41 b8 10 06 00 00",
+        "48 8d 15 ** ** ** **",
+        "48 8d 0d ** ** ** **",
+        "e8 ** ** ** **",
+        "44 39 33",
+        "75 09",
+        "83 7b 08 ff",
+        "75 16",
+        "41 ff c6",
+        "48 ff c7",
+        "48 81 c3 b0 00 00 00",
+        "48 83 ff 08",
+        "7c c7"
+      ],
+      "replacements": [
+        {
+          "index": 13,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 68,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // Bot debug display - Bot array bound
+      "id": "patch_bound_227040_b",
+      "pattern": [
+        "49 ff c5",
+        "4c 89 6d 6f",
+        "49 81 c7 b0 00 00 00",
+        "49 83 fd 08",
+        "0f 8c ** ** ** **"
+      ],
+      "replacements": [
+        {
+          "index": 17,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+
+    // ---- Generated ----
+    {
+      // BotEntityManager::AddPlayer - Relocated entity slots, bot slot reservation
+      "id": "patch_trace_addplayer",
+      "pattern": [
+        "49 8d 91 18 00 01 00 48 8b 4a 08 48 85 c9 74 0c",
+        "4c 39 21 74 07 8b 41 10 39 02 74 03 49 8b cc 48"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 60,
+          "bytes": "%cnt32%"
+        },
+        {
+          "index": 70,
+          "bytes": "%resv%"
+        }
+      ]
+    },
+    {
+      // BotEntityManager::AddMonster - Relocated entity slots, bot slot reservation
+      "id": "patch_trace_addmonster",
+      "pattern": [
+        "49 8d 91 18 00 01 00 48 8b 4a 08 48 85 c9 74 1d",
+        "48 83 39 00 74 17 8b 41 10 39 02 75 10 b0 01 eb"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 82,
+          "bytes": "%cnt32%"
+        },
+        {
+          "index": 92,
+          "bytes": "%resv%"
+        }
+      ]
+    },
+    {
+      // qxBotTraceManager::Unregister - Relocated fields and bot slot range
+      "id": "patch_trace_unregister",
+      "pattern": [
+        "4c 8d 81 18 00 01 00 33 db 48 89 74 24 38 44 8b",
+        "d3 4c 8b da 48 8b f9 4d 8b c8 0f 1f 00 49 8b 51"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 82,
+          "bytes": "%t18%"
+        },
+        {
+          "index": 167,
+          "bytes": "%cnt%"
+        },
+        {
+          "index": 187,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 210,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 224,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 248,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 264,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 275,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 304,
+          "bytes": "%cnt32%"
+        },
+        {
+          "index": 311,
+          "bytes": "%resv%"
+        }
+      ]
+    },
+    {
+      // Bot_Trace_Manager_Update - Relocated ring buffer, symmetric-write bot bound
+      "id": "patch_trace_update",
+      "pattern": [
+        "83 bd 1c 30 01 00 01 0f 82 2a 01 00 00 4c 8d b5",
+        "2c 30 01 00 41 bf 10 00 00 00 45 33 e4 f3 0f 10"
+      ],
+      "replacements": [
+        {
+          "index": 2,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 16,
+          "bytes": "%t1C%"
+        },
+        {
+          "index": 186,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotTraceManager::Request - Bot index gate and relocated ring fields
+      "id": "patch_trace_request",
+      "pattern": [
+        "83 fd 07 0f 87 24 02 00 00 41 81 fe ff 01 00 00",
+        "0f 87 17 02 00 00 48 89 74 24 70 48 89 7c 24 78"
+      ],
+      "replacements": [
+        {
+          "index": 2,
+          "bytes": "%cntm1%"
+        },
+        {
+          "index": 81,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 102,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 152,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 173,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 459,
+          "bytes": "%t18%"
+        },
+        {
+          "index": 467,
+          "bytes": "%t1C%"
+        },
+        {
+          "index": 477,
+          "bytes": "%t20%"
+        },
+        {
+          "index": 487,
+          "bytes": "%t24%"
+        },
+        {
+          "index": 497,
+          "bytes": "%t28%"
+        },
+        {
+          "index": 511,
+          "bytes": "%t2C%"
+        },
+        {
+          "index": 520,
+          "bytes": "%t30%"
+        },
+        {
+          "index": 530,
+          "bytes": "%t34%"
+        },
+        {
+          "index": 538,
+          "bytes": "%t38%"
+        }
+      ]
+    },
+    {
+      // qxBotTraceManager::Process - Relocated entity slots and bookkeeping
+      "id": "patch_trace_process",
+      "pattern": [
+        "48 8d 81 28 30 01 00 44 89 79 0c 48 8b d9 b9 10",
+        "00 00 00 8b ea 66 66 0f 1f 84 00 00 00 00 00 48"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%t18%"
+        },
+        {
+          "index": 118,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 145,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 231,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 250,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 380,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 440,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 500,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 534,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 594,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 628,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 673,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 684,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 696,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 730,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 740,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 774,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 784,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 818,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 828,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 862,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 946,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 980,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 1054,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 1074,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 1125,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 1251,
+          "bytes": "%e00%"
+        }
+      ]
+    },
+    {
+      // Bot debug world state view - Relocated entity slots
+      "id": "patch_trace_worldstate",
+      "pattern": [
+        "4b 8b 8c 04 20 00 01 00 48 85 c9 74 13 48 83 39",
+        "00 74 0d 8b 41 10 43 39 84 04 18 00 01 00 74 02"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 26,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 183,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 656,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 686,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 818,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 921,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 2425,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 3513,
+          "bytes": "%e10%"
+        }
+      ]
+    },
+    {
+      // Bot_Think - Relocated bot trace slot registration
+      "id": "patch_trace_botregister",
+      "pattern": [
+        "48 89 9c cd 20 00 01 00 8b 43 10 48 8d 9d 10 30",
+        "01 00 89 84 cd 18 00 01 00 44 89 a4 cd 10 00 01"
+      ],
+      "replacements": [
+        {
+          "index": 4,
+          "bytes": "%e10%"
+        },
+        {
+          "index": 14,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 21,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 29,
+          "bytes": "%e00%"
+        }
+      ]
+    },
+    {
+      // Bot system reset - Relocated fields, LOS cache clear count
+      "id": "patch_trace_reset",
+      "pattern": [
+        "39 b2 1c 30 01 00 76 06 89 b2 1c 30 01 00 48 8d",
+        "82 18 00 01 00 b9 00 02 00 00 48 89 70 08 89 30"
+      ],
+      "replacements": [
+        {
+          "index": 2,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 10,
+          "bytes": "%t0C%"
+        },
+        {
+          "index": 17,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 51,
+          "bytes": "%cnt32%"
+        },
+        {
+          "index": 99,
+          "bytes": "%t18%"
+        }
+      ]
+    },
+    {
+      // Bot perception - Relocated entity scan, LOS cache row bound
+      "id": "patch_trace_senses",
+      "pattern": [
+        "4d 8d 85 18 00 01 00 45 33 d2 4d 8b d9 33 d2 0f",
+        "1f 00 49 8b 48 08 48 85 c9 74 0e 48 83 39 00 74"
+      ],
+      "replacements": [
+        {
+          "index": 3,
+          "bytes": "%e08%"
+        },
+        {
+          "index": 96,
+          "bytes": "%cnt%"
+        }
+      ]
+    },
+    {
+      // qxBotTraceManager ctor - Grow allocation, relocate post-cache fields
+      "id": "patch_trace_alloc",
+      "pattern": [
+        "b9 68 32 01 00 e8 ** ** ** ** 48 8b f8 48 89 45",
+        "67 c7 00 ff ff ff ff 44 89 78 04 c7 40 08 ff ff"
+      ],
+      "replacements": [
+        {
+          "index": 1,
+          "bytes": "%talloc%"
+        },
+        {
+          "index": 70,
+          "bytes": "%e00%"
+        },
+        {
+          "index": 112,
+          "bytes": "%t00%"
+        },
+        {
+          "index": 119,
+          "bytes": "%t08%"
+        },
+        {
+          "index": 125,
+          "bytes": "%t10%"
+        },
+        {
+          "index": 137,
+          "bytes": "%t20%"
+        }
+      ]
+    }
+    // ---- END generated ----
+  ],
+  "variants": [
+    // Variable derivation (n = bot count):
+    //   cnt/cntm1/cnt32 = n as imm8 / n-1 as imm8 / n as imm32. n must stay <= 0x7F:
+    //                     the bot-array bounds are sign-extended `cmp r/m, imm8` forms.
+    //   qxBotManager   (element 0xB0, array at +8):
+    //     alloc = 0x20 + n*0xB0    d588 = 0x08 + n*0xB0    d590 = 0x10 + n*0xB0
+    //     d594  = 0x14 + n*0xB0    d598 = 0x18 + n*0xB0
+    //   qxBotTraceManager (LOS cache [n][512] of 16 bytes at +0x10, then 512 entity
+    //   slots of 0x18 whose first n are reserved for the bots themselves):
+    //     ent    = 0x10 + n*0x2000                e00/e08/e10 = ent + 0/8/0x10
+    //     resv   = ent + n*0x18 + 8               post   = ent + 0x3000
+    //     tXX    = post + 0xXX                    talloc = post + 0x258
+    {
+      "id": "bots16",
+      "name": "16 max players (15 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "10"
+        },
+        {
+          "variable": "cap",
+          "value": "10"
+        },
+        {
+          "variable": "cntm1",
+          "value": "0F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "10000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "200B0000"
+        },
+        {
+          "variable": "d588",
+          "value": "080B0000"
+        },
+        {
+          "variable": "d590",
+          "value": "100B0000"
+        },
+        {
+          "variable": "d594",
+          "value": "140B0000"
+        },
+        {
+          "variable": "d598",
+          "value": "180B0000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000200"
+        },
+        {
+          "variable": "e08",
+          "value": "18000200"
+        },
+        {
+          "variable": "e10",
+          "value": "20000200"
+        },
+        {
+          "variable": "resv",
+          "value": "98010200"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320200"
+        },
+        {
+          "variable": "t00",
+          "value": "10300200"
+        },
+        {
+          "variable": "t08",
+          "value": "18300200"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300200"
+        },
+        {
+          "variable": "t10",
+          "value": "20300200"
+        },
+        {
+          "variable": "t18",
+          "value": "28300200"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300200"
+        },
+        {
+          "variable": "t20",
+          "value": "30300200"
+        },
+        {
+          "variable": "t24",
+          "value": "34300200"
+        },
+        {
+          "variable": "t28",
+          "value": "38300200"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300200"
+        },
+        {
+          "variable": "t30",
+          "value": "40300200"
+        },
+        {
+          "variable": "t34",
+          "value": "44300200"
+        },
+        {
+          "variable": "t38",
+          "value": "48300200"
+        }
+      ]
+    },
+    {
+      "id": "bots32",
+      "name": "32 max players (31 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "20"
+        },
+        {
+          "variable": "cap",
+          "value": "20"
+        },
+        {
+          "variable": "cntm1",
+          "value": "1F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "20000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "20160000"
+        },
+        {
+          "variable": "d588",
+          "value": "08160000"
+        },
+        {
+          "variable": "d590",
+          "value": "10160000"
+        },
+        {
+          "variable": "d594",
+          "value": "14160000"
+        },
+        {
+          "variable": "d598",
+          "value": "18160000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000400"
+        },
+        {
+          "variable": "e08",
+          "value": "18000400"
+        },
+        {
+          "variable": "e10",
+          "value": "20000400"
+        },
+        {
+          "variable": "resv",
+          "value": "18030400"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320400"
+        },
+        {
+          "variable": "t00",
+          "value": "10300400"
+        },
+        {
+          "variable": "t08",
+          "value": "18300400"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300400"
+        },
+        {
+          "variable": "t10",
+          "value": "20300400"
+        },
+        {
+          "variable": "t18",
+          "value": "28300400"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300400"
+        },
+        {
+          "variable": "t20",
+          "value": "30300400"
+        },
+        {
+          "variable": "t24",
+          "value": "34300400"
+        },
+        {
+          "variable": "t28",
+          "value": "38300400"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300400"
+        },
+        {
+          "variable": "t30",
+          "value": "40300400"
+        },
+        {
+          "variable": "t34",
+          "value": "44300400"
+        },
+        {
+          "variable": "t38",
+          "value": "48300400"
+        }
+      ]
+    },
+    {
+      "id": "bots64",
+      "name": "64 max players (63 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "40"
+        },
+        {
+          "variable": "cap",
+          "value": "40"
+        },
+        {
+          "variable": "cntm1",
+          "value": "3F"
+        },
+        {
+          "variable": "cnt32",
+          "value": "40000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "202C0000"
+        },
+        {
+          "variable": "d588",
+          "value": "082C0000"
+        },
+        {
+          "variable": "d590",
+          "value": "102C0000"
+        },
+        {
+          "variable": "d594",
+          "value": "142C0000"
+        },
+        {
+          "variable": "d598",
+          "value": "182C0000"
+        },
+        {
+          "variable": "e00",
+          "value": "10000800"
+        },
+        {
+          "variable": "e08",
+          "value": "18000800"
+        },
+        {
+          "variable": "e10",
+          "value": "20000800"
+        },
+        {
+          "variable": "resv",
+          "value": "18060800"
+        },
+        {
+          "variable": "talloc",
+          "value": "68320800"
+        },
+        {
+          "variable": "t00",
+          "value": "10300800"
+        },
+        {
+          "variable": "t08",
+          "value": "18300800"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C300800"
+        },
+        {
+          "variable": "t10",
+          "value": "20300800"
+        },
+        {
+          "variable": "t18",
+          "value": "28300800"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C300800"
+        },
+        {
+          "variable": "t20",
+          "value": "30300800"
+        },
+        {
+          "variable": "t24",
+          "value": "34300800"
+        },
+        {
+          "variable": "t28",
+          "value": "38300800"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C300800"
+        },
+        {
+          "variable": "t30",
+          "value": "40300800"
+        },
+        {
+          "variable": "t34",
+          "value": "44300800"
+        },
+        {
+          "variable": "t38",
+          "value": "48300800"
+        }
+      ]
+    },
+    {
+      "id": "bots128",
+      "name": "128 max players (127 bots)",
+      "patches": [
+        "patch_clamp_lobby", "patch_slider_numbots", "patch_slider_minplayers",
+        "patch_apply_maxplayers",
+        "patch_mgr_alloc_and_fields", "patch_mgr_index_init",
+        "patch_mgr_job_reserve", "patch_chars_load", "patch_chars_load_count",
+        "patch_chars_pick_head", "patch_chars_pick_a", "patch_chars_pick_b", "patch_chars_find_head",
+        "patch_chars_find_a", "patch_chars_find_b", "patch_bound_1c1f10", "patch_bound_1c22a0",
+        "patch_bound_21b730", "patch_bound_21c4d0", "patch_bound_21f1d0", "patch_bound_2203a0_a",
+        "patch_bound_2203a0_b", "patch_bound_2203a0_c", "patch_bound_2203a0_d",
+        "patch_bound_221640_a", "patch_bound_221640_b", "patch_bound_223220_a",
+        "patch_bound_223220_b", "patch_bound_224210", "patch_bound_addbot", "patch_bound_kickbot",
+        "patch_bound_findbot", "patch_bound_227040_a", "patch_bound_227040_b",
+        "patch_trace_addmonster", "patch_trace_addplayer", "patch_trace_alloc",
+        "patch_trace_botregister", "patch_trace_process", "patch_trace_request", "patch_trace_reset",
+        "patch_trace_senses", "patch_trace_unregister", "patch_trace_update", "patch_trace_worldstate"
+      ],
+      "variables": [
+        {
+          "variable": "cnt",
+          "value": "7F"
+        },
+        {
+          "variable": "cap",
+          "value": "80"
+        },
+        {
+          "variable": "cntm1",
+          "value": "7E"
+        },
+        {
+          "variable": "cnt32",
+          "value": "7F000000"
+        },
+        {
+          "variable": "alloc",
+          "value": "70570000"
+        },
+        {
+          "variable": "d588",
+          "value": "58570000"
+        },
+        {
+          "variable": "d590",
+          "value": "60570000"
+        },
+        {
+          "variable": "d594",
+          "value": "64570000"
+        },
+        {
+          "variable": "d598",
+          "value": "68570000"
+        },
+        {
+          "variable": "e00",
+          "value": "10E00F00"
+        },
+        {
+          "variable": "e08",
+          "value": "18E00F00"
+        },
+        {
+          "variable": "e10",
+          "value": "20E00F00"
+        },
+        {
+          "variable": "resv",
+          "value": "00EC0F00"
+        },
+        {
+          "variable": "talloc",
+          "value": "68121000"
+        },
+        {
+          "variable": "t00",
+          "value": "10101000"
+        },
+        {
+          "variable": "t08",
+          "value": "18101000"
+        },
+        {
+          "variable": "t0C",
+          "value": "1C101000"
+        },
+        {
+          "variable": "t10",
+          "value": "20101000"
+        },
+        {
+          "variable": "t18",
+          "value": "28101000"
+        },
+        {
+          "variable": "t1C",
+          "value": "2C101000"
+        },
+        {
+          "variable": "t20",
+          "value": "30101000"
+        },
+        {
+          "variable": "t24",
+          "value": "34101000"
+        },
+        {
+          "variable": "t28",
+          "value": "38101000"
+        },
+        {
+          "variable": "t2C",
+          "value": "3C101000"
+        },
+        {
+          "variable": "t30",
+          "value": "40101000"
+        },
+        {
+          "variable": "t34",
+          "value": "44101000"
+        },
+        {
+          "variable": "t38",
+          "value": "48101000"
+        }
+      ]
+    }
+  ]
+}

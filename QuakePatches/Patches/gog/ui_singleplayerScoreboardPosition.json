@@ -6,7 +6,7 @@
     {
       "id": "patch_position",
       "pattern": [
-        "f3 0f 10 05 a1 d2 55 00"
+        "f3 0f 10 05 b1 e1 55 00"
       ],
       "replacements": [
         {
@@ -24,7 +24,7 @@
       "variables": [
         {
           "variable": "position_y",
-          "value": "A1 D2 55 00" /* 0.8 */
+          "value": "B1 E1 55 00" /* 0.8 */
         }
       ]
     },
@@ -35,7 +35,7 @@
       "variables": [
         {
           "variable": "position_y",
-          "value": "9D D1 55 00" /* 0.1 */
+          "value": "AD E0 55 00" /* 0.1 */
         }
       ]
     },
@@ -46,7 +46,7 @@
       "variables": [
         {
           "variable": "position_y",
-          "value": "0D D2 55 00" /* 0.4 */
+          "value": "1D E1 55 00" /* 0.4 */
         }
       ]
     }

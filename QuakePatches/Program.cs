@@ -1,11 +1,13 @@
 ﻿using AsmResolver;
 using QuakePatches.Patching;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace QuakePatches;
 
@@ -56,61 +58,27 @@ class Program
         var binary = new PatchedBinary(bytes, _ownHash);
         Console.WriteLine("Loaded");
 
-        // Make sure the backup exists and that it's fine
-        var originalPath = _binaryPath + ".original";
-        if (!File.Exists(originalPath))
-        {
-            Console.WriteLine("No original backup found");
-            Console.WriteLine("Making a backup of the original executable...");
+        Console.WriteLine("Detecting edition...");
+        var version = GameVersionDetector.Detect(binary);
+        Console.WriteLine($"Edition: {version}");
 
-            if (binary.Patched != PatchedBinary.PatchStatus.Unpatched)
-            {
-                Console.WriteLine("FAILURE: The binary that was provided is not an original unpatched binary.");
+        if(version == GameVersion.Unknown)
+            if(!AskForConfirmation("FAILURE: Could not detect the game edition. Do you still want to continue?", false))
                 return false;
-            }
 
-            File.Copy(_binaryPath, originalPath);
-            Console.WriteLine($"Copied '{_binaryPath}' to '{originalPath}'");
-        }
-
-        // Load the original binary now
-        Console.Write($"Loading original binary '{originalPath}'... ");
-        _originalBinary = new PatchedBinary(File.ReadAllBytes(originalPath), _ownHash);
-        Console.WriteLine("Loaded");
-
-        if (_originalBinary.Patched != PatchedBinary.PatchStatus.Unpatched)
-        {
-            Console.WriteLine("FAILURE: The original binary is not an unpatched version. Please delete it and make sure you make a new copy");
+        if(version == GameVersion.EGS) {
+            Console.WriteLine("EGS edition isn't supported at the moment");
             return false;
         }
 
-        // Do some version checks between original and backup
-        Console.Write("Doing version checks... ");
-
-        if (binary.Patched == PatchedBinary.PatchStatus.PatchedVersionMismatch)
-        {
-            Console.WriteLine("WARNING: The binary is patched, but it was done with a different Quake Patch program.");
-        }
-        else if (binary.Patched == PatchedBinary.PatchStatus.Patched)
-        {
-            if (_originalBinary.GetBinaryHash() != binary.OriginalHash)
-            {
-                Console.WriteLine("FAILURE: The binary is patched, but the backup is for a different game version.");
-                return false;
-            }
-        }
-
-        if (_originalBinary.GetBinaryHash() != (binary.OriginalHash ?? binary.GetBinaryHash()))
-        {
-            Console.WriteLine("FAILURE: The binary and backup are for a different game version.");
+        if(!DoFileStuffs(binary))
             return false;
-        }
 
         Console.WriteLine("OK");
 
         // Load patches
         Console.WriteLine("Loading patches... ");
-        LoadPatches();
+        LoadPatches(version);
         Console.WriteLine($"Loaded {_patches.Count} patches");
 
         // Select applied patches
@@ -126,7 +94,6 @@ class Program
         //Console.WriteLine("Continuing in 4s...");
         //Thread.Sleep(TimeSpan.FromSeconds(4));
 
-
         try
         {
             MenuPatches();
@@ -140,6 +107,86 @@ class Program
         return true;
     }
 
+    static bool DoFileStuffs(PatchedBinary binary)
+    {
+        bool tryAgain;
+        bool deleteBackup = false;
+        
+        var originalPath = _binaryPath + ".original";
+
+        do {
+            tryAgain = false;
+            
+            if(deleteBackup && File.Exists(originalPath))
+                File.Delete(originalPath);
+
+            // Make sure the backup exists and that it's fine
+            if (!File.Exists(originalPath))
+            {
+                Console.WriteLine("No original backup found");
+                Console.WriteLine("Making a backup of the original executable...");
+
+                if (binary.Patched != PatchedBinary.PatchStatus.Unpatched)
+                {
+                    Console.WriteLine("FAILURE: The binary that was provided is already patched. Please provide the original unpatched binary.");
+                    return false;
+                }
+
+                File.Copy(_binaryPath, originalPath);
+                Console.WriteLine($"Copied '{_binaryPath}' to '{originalPath}'");
+            }
+
+            // Load the original binary now
+            Console.Write($"Loading original binary '{originalPath}'... ");
+            _originalBinary = new PatchedBinary(File.ReadAllBytes(originalPath), _ownHash);
+            Console.WriteLine("Loaded");
+
+            if (_originalBinary.Patched != PatchedBinary.PatchStatus.Unpatched)
+            {
+                Console.WriteLine("FAILURE: The original binary is not an unpatched version. Please delete it and make sure you make a new copy");
+                return false;
+            }
+
+            // Do some version checks between original and backup
+            Console.Write("Doing version checks... ");
+
+            if (binary.Patched == PatchedBinary.PatchStatus.PatchedVersionMismatch)
+            {
+                Console.WriteLine("WARNING: The binary is patched, but it was done with a different Quake Patch program.");
+            }
+            else if (binary.Patched == PatchedBinary.PatchStatus.Patched)
+            {
+                if (_originalBinary.GetBinaryHash() != binary.OriginalHash)
+                {
+                    Console.WriteLine("FAILURE: The binary is patched, but the backup is for a different game version.");
+
+                    Console.WriteLine();
+                    if(!AskForConfirmation("Do you want to delete the backup and create a new one?", true))
+                        return false;
+
+                    deleteBackup = true;
+                    tryAgain = true;
+                    continue;
+                }
+            }
+
+            if (_originalBinary.GetBinaryHash() != (binary.OriginalHash ?? binary.GetBinaryHash()))
+            {
+                Console.WriteLine("FAILURE: The binary and backup are for a different game version.");
+
+                Console.WriteLine();
+                if(!AskForConfirmation("Do you want to delete the backup and create a new one?", true))
+                    return false;
+
+                deleteBackup = true;                
+                tryAgain = true;
+                continue;
+            }
+        }
+        while(tryAgain);
+
+        return true;
+    }
 
     /// <summary>
     /// Given the provided patched binary, it will select all the variants that are present in the binary.
@@ -437,18 +484,27 @@ class Program
         Console.ReadKey(true);
     }
 
-    static bool LoadPatches()
+    static bool LoadPatches(GameVersion version)
     {
         _patches = new List<LoadedPatchFile>();
 
+        var versionFolder = version switch
+        {
+            GameVersion.Steam => "steam",
+            GameVersion.GOG => "gog",
+            GameVersion.EGS => "egs",
+            _ => throw new NotImplementedException()
+        };
+
         // Load patches from the Patches folder
-        var patchesFolder = Path.Combine(Environment.CurrentDirectory, "Patches");
+        var patchesFolder = Path.Combine(Environment.CurrentDirectory, "Patches", versionFolder);
         bool errors = false;
 
         if (Directory.Exists(patchesFolder))
         {
             Console.WriteLine("Patches folder found");
-            foreach (var file in new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Patches")).GetFiles("*.json"))
+
+            foreach (var file in new DirectoryInfo(patchesFolder).GetFiles("*.json"))
             {
                 try {
                     var patch = JsonSerializer.Deserialize(File.ReadAllText(file.FullName), AppJsonContext.Default.PatchFile);
@@ -504,6 +560,30 @@ class Program
         
         using (var sha512 = SHA512.Create())
             return Convert.ToHexString(sha512.ComputeHash(File.ReadAllBytes(exePath)));
+    }
+
+    private static bool AskForConfirmation(string prompt, bool defaultValue)
+    {
+        var keyString = defaultValue switch
+        {
+            true => "(Y/n)",
+            false => "(y/N)"
+        };
+
+        while(true) {
+            Console.WriteLine($"{prompt} {keyString}");
+            var read = Console.ReadKey();
+
+            switch(read.Key)
+            {
+                case ConsoleKey.Y:
+                    return true;
+                case ConsoleKey.N:
+                    return false;
+                case ConsoleKey.Enter:
+                    return defaultValue;
+            }
+        }
     }
 
 }
